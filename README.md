@@ -75,7 +75,7 @@ var my_value = my_section.fetch("my_key", "my_default", true)]
 
 
 # Delete all keys in my_section except those listed
-my_value.purge(["skipped_key"])
+my_section.purge(["skipped_key"])
 
 # Delete all sections in cache except those listed
 EZCache.purge(["skipped_section"])
