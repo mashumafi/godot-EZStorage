@@ -2,11 +2,11 @@
 
 Easily store/fetch data using key-value storage.
 
-* [EZStorage](#EZStorage%20API)
+* [EZStorage](#EZStorage-API)
   * A low-level key-value storage using the file system.
   * Store anything that would work with `var2str`.
   * Replication logic that can prevent corrupted files.
-* [EZCache](#EZCache%20API)
+* [EZCache](#EZCache-API)
   * An efficient in-memory cache that only loads files once.
   * Includes events for receiving updates when values change.
 

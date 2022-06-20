@@ -41,6 +41,10 @@ class SectionCache:
 		return all_success
 
 
+# get_section(section: String) -> SectionCache
+# Get a section from the cache
+# @param section (String): name of the section to fetch
+# @return cache (SectionCache): a new or existing cache for that section
 func get_section(section: String) -> SectionCache:
 	if _sections.has(section):
 		return _sections[section]
@@ -55,9 +59,9 @@ func purge(skip_sections: PoolStringArray = []) -> bool:
 	for section in EZStorage.get_sections():
 		if not section in skip_sections:
 			if _sections.has(section):
-				all_success = all_success && _sections[section].purge()
-				all_success = all_success && EZStorage.purge(section)
-				all_success = all_success && _sections.erase(section)
+				all_success = _sections[section].purge() && all_success
+				all_success = EZStorage.purge(section) && all_success
+				all_success = _sections.erase(section) && all_success
 			else:
-				all_success = all_success && EZStorage.purge(section)
+				all_success = EZStorage.purge(section) && all_success
 	return all_success
