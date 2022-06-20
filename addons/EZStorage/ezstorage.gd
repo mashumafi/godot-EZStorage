@@ -15,7 +15,7 @@ class FileProvider:
 
 	func _hash(s: String) -> String:
 		if OS.is_debug_build() and Settings.get_debug_filenames():
-			return s
+			return s.http_escape()
 		return s.sha256_text()
 
 	func create_section(section: String):
