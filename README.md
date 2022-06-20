@@ -4,8 +4,8 @@ Easily store/fetch data using key-value storage.
 
 * [EZStorage](#EZStorage-API)
   * A low-level key-value storage using the file system.
-  * Store anything that would work with `var2str`.
-  * Replication logic that can prevent corrupted files.
+  * Store/Fetch anything that would work with `var2str`.
+  * Replication logic can prevent corrupted files.
 * [EZCache](#EZCache-API)
   * An efficient in-memory cache that only loads files once.
   * Includes events for receiving updates when values change.
@@ -20,8 +20,8 @@ The directory used to save the data. It should be at least in `user://` and by d
 
 ### Debug Filenames
 
-When enabled file names will use html encoding making it easier to debug the files created.
-This feature can be disabled to use filenames that release build would create.
+When enabled file names will use http encoding making it easier to debug the files created.
+This feature can be disabled to use filenames that would be used in release mode.
 
 ## API
 

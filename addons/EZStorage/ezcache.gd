@@ -30,6 +30,11 @@ class SectionCache:
 			_keys[key] = result
 		return result
 
+
+	# purge(skip_keys: PoolStringArray = []) -> bool
+	# Remove keys from the cache and file system
+	# @param skip_keys (PoolStringArray): the keys to prevent deletion
+	# @return all_success (bool): all purging was a success
 	func purge(skip_keys: PoolStringArray = []) -> bool:
 		var all_success := true
 		for key in EZStorage.get_keys(_section):
@@ -54,6 +59,10 @@ func get_section(section: String) -> SectionCache:
 	return cache
 
 
+# purge(skip_sections: PoolStringArray = []) -> bool
+# Remove sections from the cache and file system
+# @param skip_sections (PoolStringArray): the sections to prevent deletion
+# @return all_success (bool): all purging was a success
 func purge(skip_sections: PoolStringArray = []) -> bool:
 	var all_success := true
 	for section in EZStorage.get_sections():
