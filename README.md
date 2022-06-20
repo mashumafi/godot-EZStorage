@@ -1,6 +1,6 @@
 # EZStorage
 
-i![EZStorage](icon.png)
+![EZStorage](icon.png)
 
 Easily store/fetch data using key-value storage.
 
@@ -99,4 +99,4 @@ my_section.connect("changed, self, "_key_changed")
 
 Here is an example of the level select screen being updated after beating a few stages in the game.
 
-[![Example-Pokaban](screenshots/ezcache-pokaban.gif)](http://s.team/a/1937170?utm_source=github&utm_campaign=ezstorage)
+[![Example-Pokaban](screenshots/example-pokaban.gif)](http://s.team/a/1937170?utm_source=github&utm_campaign=ezstorage)
