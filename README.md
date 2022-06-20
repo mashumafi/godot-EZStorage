@@ -99,4 +99,4 @@ my_section.connect("changed, self, "_key_changed")
 
 Here is an example of the level select screen being updated after beating a few stages in the game.
 
-![Example-Pokaban](screenshots/example-pokaban.gif)
+[![Example-Pokaban](screenshots/example-pokaban.gif)](http://s.team/a/1937170?utm_source=github&utm_campaign=ezstorage)
