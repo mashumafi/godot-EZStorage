@@ -13,6 +13,10 @@ class SectionCache:
 		self._section = p_section
 		EZStorage.create_section(p_section)
 
+	# store(key: String, value: Any) -> void:
+	# Stores `value` into the `key`
+	# @param key (String): The name of the key.
+	# @param value (Any): The value to store.
 	func store(key: String, value):
 		if _keys.has(key) and _keys[key] == value:
 			return
@@ -21,6 +25,13 @@ class SectionCache:
 		_keys[key] = value
 		emit_signal("changed", key)
 
+	# fetch(key: String, default: Any = null, cache_default: bool = false) -> Any:
+	# Fetches values from the `key` of `section`.
+	# @param key (String): The name of the key.
+	# @param default (Any): The value returned if key/section does not exist.
+	# @param cache_default (bool): Forces the `default` to be cached in memory to skip the file system in future calls.
+	#                              This does not modify the file system.
+	# @return value (Any): The result or `default` if none found.
 	func fetch(key: String, default = null, cache_default := false):
 		if _keys.has(key):
 			return _keys[key]
@@ -32,9 +43,9 @@ class SectionCache:
 
 
 	# purge(skip_keys: PoolStringArray = []) -> bool
-	# Remove keys from the cache and file system
-	# @param skip_keys (PoolStringArray): the keys to prevent deletion
-	# @return all_success (bool): all purging was a success
+	# Remove keys from the cache and file system.
+	# @param skip_keys (PoolStringArray): The keys to prevent deletion.
+	# @return all_success (bool): All purging was a success.
 	func purge(skip_keys: PoolStringArray = []) -> bool:
 		var all_success := true
 		for key in EZStorage.get_keys(_section):
@@ -47,9 +58,9 @@ class SectionCache:
 
 
 # get_section(section: String) -> SectionCache
-# Get a section from the cache
-# @param section (String): name of the section to fetch
-# @return cache (SectionCache): a new or existing cache for that section
+# Get a section from the cache.
+# @param section (String): The name of the section to fetch.
+# @return cache (SectionCache): A new or existing cache for that section.
 func get_section(section: String) -> SectionCache:
 	if _sections.has(section):
 		return _sections[section]
@@ -60,9 +71,9 @@ func get_section(section: String) -> SectionCache:
 
 
 # purge(skip_sections: PoolStringArray = []) -> bool
-# Remove sections from the cache and file system
-# @param skip_sections (PoolStringArray): the sections to prevent deletion
-# @return all_success (bool): all purging was a success
+# Remove sections from the cache and file system.
+# @param skip_sections (PoolStringArray): The sections to prevent deletion.
+# @return all_success (bool): All purging was a success.
 func purge(skip_sections: PoolStringArray = []) -> bool:
 	var all_success := true
 	for section in EZStorage.get_sections():
