@@ -65,18 +65,16 @@ class FileProvider:
 	func purge(section := "", key := "") -> bool:
 		var path := Settings.get_directory()
 		if not section.empty():
-			path = path.plus_file(section)
+			path = path.plus_file(_hash(section))
 			if not key.empty():
-				path = path.plus_file(key)
+				path = path.plus_file(_hash(key))
 
 		return directory_remove_recursive(path)
 
 	static func directory_remove_recursive(path: String) -> bool:
 		var directory := Directory.new()
 
-		# Open directory
 		if directory.open(path) == OK:
-			# List directory content
 			if directory.list_dir_begin(true) != OK:
 				return false
 			var file_name := directory.get_next()
@@ -89,13 +87,33 @@ class FileProvider:
 						return false
 				file_name = directory.get_next()
 
-			# Remove current path
 			if directory.remove(path) != OK:
 				return false
 		else:
 			return false
 
 		return true
+
+	static func _get_files(path) -> PoolStringArray:
+		var files := PoolStringArray()
+		var directory := Directory.new()
+
+		if directory.open(path) == OK:
+			if directory.list_dir_begin(true) != OK:
+				return files
+			var file_name := directory.get_next()
+			while file_name != "":
+				if directory.current_is_dir():
+					files.append(file_name.get_file().http_unescape())
+				file_name = directory.get_next()
+
+		return files
+
+	func get_sections() -> PoolStringArray:
+		return _get_files(root)
+
+	func get_keys(section: String) -> PoolStringArray:
+		return _get_files(root.plus_file(_hash(section)))
 
 
 func create_section(section: String):
@@ -112,3 +130,11 @@ func fetch(section: String, key: String, default = null):
 
 func purge(section := "", key := "") -> bool:
 	return provider.purge(section, key)
+
+
+func get_sections() -> PoolStringArray:
+	return provider.get_sections()
+
+
+func get_keys(section: String) -> PoolStringArray:
+	return provider.get_keys(section)
