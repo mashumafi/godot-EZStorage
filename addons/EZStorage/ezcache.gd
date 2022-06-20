@@ -29,7 +29,8 @@ class SectionCache:
 	# Fetches values from the `key` of `section`.
 	# @param key (String): The name of the key.
 	# @param default (Any): The value returned if key/section does not exist.
-	# @param cache_default (bool): Forces the `default` to be cached in memory to skip the file system in future calls.
+	# @param cache_default (bool): Forces the `default` to be cached in memory
+	#                              to skip the file system in future calls.
 	#                              This does not modify the file system.
 	# @return value (Any): The result or `default` if none found.
 	func fetch(key: String, default = null, cache_default := false):
@@ -40,7 +41,6 @@ class SectionCache:
 		if result != default or cache_default:
 			_keys[key] = result
 		return result
-
 
 	# purge(skip_keys: PoolStringArray = []) -> bool
 	# Remove keys from the cache and file system.
