@@ -135,8 +135,43 @@ func test_cache() -> void:
 	hello_section.store("new_key", "new_value")
 	assert_eq(list_storage_dir(), map_to_storage([sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
-		[hello_section, "new_key"]
+		[hello_section, "new_key"],
+	])
+
+	EZStorage.store("hello", "purge", true)
+	assert_eq(list_storage_dir(), map_to_storage([sk("hello", ["new_key", "purge"])]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+	])
+
+	EZStorage.store("purge", "example", true)
+	assert_eq(list_storage_dir(), map_to_storage([sk("purge", ["example"]), sk("hello", ["new_key", "purge"])]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+	])
+
+	assert(hello_section.purge(["new_key"]))
+	assert_eq(list_storage_dir(), map_to_storage([sk("purge", ["example"]), sk("hello", ["new_key"])]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+	])
+
+	assert(EZCache.purge(["hello"]))
+	assert_eq(list_storage_dir(), map_to_storage([sk("hello", ["new_key"])]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+	])
+
+	assert(EZCache.purge())
+	assert_eq(list_storage_dir(), map_to_storage([]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+		[hello_section, "new_key"],
 	])
 
 	assert(EZStorage.purge())
 	assert_eq(list_storage_dir(), map_to_storage([]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+		[hello_section, "new_key"],
+	])

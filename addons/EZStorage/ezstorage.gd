@@ -69,9 +69,9 @@ class FileProvider:
 			if not key.empty():
 				path = path.plus_file(_hash(key))
 
-		return directory_remove_recursive(path)
+		return _directory_remove_recursive(path)
 
-	static func directory_remove_recursive(path: String) -> bool:
+	static func _directory_remove_recursive(path: String) -> bool:
 		var directory := Directory.new()
 
 		if directory.open(path) == OK:
@@ -80,7 +80,7 @@ class FileProvider:
 			var file_name := directory.get_next()
 			while file_name != "":
 				if directory.current_is_dir():
-					if not directory_remove_recursive(path.plus_file(file_name)):
+					if not _directory_remove_recursive(path.plus_file(file_name)):
 						return false
 				else:
 					if directory.remove(file_name) != OK:
@@ -116,11 +116,19 @@ class FileProvider:
 		return _get_files(root.plus_file(_hash(section)))
 
 
-func create_section(section: String):
+# create_section(section: String) -> void
+# Creates a directory for storing sections
+# @param section (String): the name of the section
+func create_section(section: String) -> void:
 	provider.create_section(section)
 
 
-func store(section: String, key: String, value):
+# store(section: String, key: String, value: Any) -> void:
+# Stores `value` into the `key` of `section`
+# @param section (String): the name of the section
+# @param key (String): the name of the key
+# @param value (Any): the value to store
+func store(section: String, key: String, value) -> void:
 	provider.store(section, key, value)
 
 
@@ -128,13 +136,25 @@ func fetch(section: String, key: String, default = null):
 	return provider.fetch(section, key, default)
 
 
+# purge(section: String = "", key: String = "") -> bool
+# Delete specified `section` and/or `key` from the file system
+# @param section (String): optional section name, delete all sections if missing
+# @oaram key (String): optional key name, delete all keys if missing
+# @return success (bool): the purge succeeded
 func purge(section := "", key := "") -> bool:
 	return provider.purge(section, key)
 
 
+# get_sections() -> PoolStringArray
+# Get all sections available
+# @return sections (String): all sections available
 func get_sections() -> PoolStringArray:
 	return provider.get_sections()
 
 
+# get_keys(section: String) -> PoolStringArray
+# Get all keys for the named `section`
+# @param section (String): the name of the section
+# @return keys (String): all keys in the section
 func get_keys(section: String) -> PoolStringArray:
 	return provider.get_keys(section)

@@ -2,11 +2,11 @@
 
 Easily store/fetch data using key-value storage.
 
-* [EZStorage](#EZStorage)
+* [EZStorage](#EZStorage%20API)
   * A low-level key-value storage using the file system.
   * Store anything that would work with `var2str`.
   * Replication logic that can prevent corrupted files.
-* [EZCache](#EZCache)
+* [EZCache](#EZCache%20API)
   * An efficient in-memory cache that only loads files once.
   * Includes events for receiving updates when values change.
 
@@ -25,7 +25,7 @@ This feature can be disabled to use filenames that release build would create.
 
 ## API
 
-### EZStorage
+### EZStorage API
 
 A low-level key-value storage using the file system.
 
@@ -51,7 +51,7 @@ EZStorage.purge("my_section")
 EZStorage.purge()
 ```
 
-### EZCache
+### EZCache API
 
 An efficient in-memory cache that only loads from storage once.
 

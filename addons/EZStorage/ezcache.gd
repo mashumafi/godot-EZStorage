@@ -30,14 +30,9 @@ class SectionCache:
 			_keys[key] = result
 		return result
 
-	func purge(skip_keys: PoolStringArray = [], scan_files := true) -> bool:
+	func purge(skip_keys: PoolStringArray = []) -> bool:
 		var all_success := true
-		var keys: PoolStringArray
-		if scan_files:
-			keys = EZStorage.get_keys(_section)
-		else:
-			keys = _keys.keys()
-		for key in keys:
+		for key in EZStorage.get_keys(_section):
 			if not key in skip_keys:
 				var success := EZStorage.purge(_section, key)
 				all_success = all_success && success
@@ -55,17 +50,14 @@ func get_section(section: String) -> SectionCache:
 	return cache
 
 
-func purge(skip_sections: PoolStringArray = [], scan_files := true) -> void:
-	var sections: PoolStringArray
-	if scan_files:
-		sections = EZStorage.get_sections()
-	else:
-		sections = _sections.keys()
-
-	for section in sections:
+func purge(skip_sections: PoolStringArray = []) -> bool:
+	var all_success := true
+	for section in EZStorage.get_sections():
 		if not section in skip_sections:
 			if _sections.has(section):
-				_sections[section].purge([], scan_files)
-				_sections.erase(section)
+				all_success = all_success && _sections[section].purge()
+				all_success = all_success && EZStorage.purge(section)
+				all_success = all_success && _sections.erase(section)
 			else:
-				EZStorage.purge(section)
+				all_success = all_success && EZStorage.purge(section)
+	return all_success
