@@ -20,7 +20,7 @@ The directory used to save the data. It should be at least in `user://` and by d
 
 ### Debug Filenames
 
-When enabled file names will use http encoding making it easier to debug the files created.
+When enabled file names will use html encoding making it easier to debug the files created.
 This feature can be disabled to use filenames that would be used in release mode.
 
 ## API
