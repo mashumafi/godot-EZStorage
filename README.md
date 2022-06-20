@@ -2,11 +2,11 @@
 
 Easily store/fetch data using key-value storage.
 
-* [EZStorage](#EZStorage)
+* [EZStorage](#EZStorage-API)
   * A low-level key-value storage using the file system.
-  * Store anything that would work with `var2str`.
-  * Replication logic that can prevent corrupted files.
-* [EZCache](#EZCache)
+  * Store/Fetch anything that would work with `var2str`.
+  * Replication logic can prevent corrupted files.
+* [EZCache](#EZCache-API)
   * An efficient in-memory cache that only loads files once.
   * Includes events for receiving updates when values change.
 
@@ -21,11 +21,11 @@ The directory used to save the data. It should be at least in `user://` and by d
 ### Debug Filenames
 
 When enabled file names will use html encoding making it easier to debug the files created.
-This feature can be disabled to use filenames that release build would create.
+This feature can be disabled to use filenames that would be used in release mode.
 
 ## API
 
-### EZStorage
+### EZStorage API
 
 A low-level key-value storage using the file system.
 
@@ -51,7 +51,7 @@ EZStorage.purge("my_section")
 EZStorage.purge()
 ```
 
-### EZCache
+### EZCache API
 
 An efficient in-memory cache that only loads from storage once.
 
@@ -75,7 +75,7 @@ var my_value = my_section.fetch("my_key", "my_default", true)]
 
 
 # Delete all keys in my_section except those listed
-my_value.purge(["skipped_key"])
+my_section.purge(["skipped_key"])
 
 # Delete all sections in cache except those listed
 EZCache.purge(["skipped_section"])
