@@ -97,6 +97,6 @@ my_section.connect("changed, self, "_key_changed")
 
 # Example
 
-Here is an example of the level select screen being updated after beating a few stages in the game.
+[Pokaban](http://s.team/a/1937170?utm_source=github&utm_campaign=ezstorage) uses signals from `EZCache` to update the level select screen by adjusting the stars displayed after beating stages.
 
-[![Example-Pokaban](screenshots/example-pokaban.gif)](http://s.team/a/1937170?utm_source=github&utm_campaign=ezstorage)
+![Example-Pokaban](screenshots/example-pokaban.gif)
