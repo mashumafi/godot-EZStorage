@@ -1,5 +1,7 @@
 # EZStorage
 
+i![EZStorage](icon.png)
+
 Easily store/fetch data using key-value storage.
 
 * [EZStorage](#EZStorage-API)
@@ -13,6 +15,8 @@ Easily store/fetch data using key-value storage.
 ## Settings
 
 Settings can be found under application/storage in the project settings.
+
+![Settings](screenshots/settings.png)
 
 ### Directory
 
@@ -90,3 +94,9 @@ function _key_changed(key: String) -> void:
   print("The following key changed in my_section: ", key)
 my_section.connect("changed, self, "_key_changed")
 ```
+
+# Example
+
+Here is an example of the level select screen being updated after beating a few stages in the game.
+
+![Example-Pokaban](screenshots/ezcache-pokaban.gif)
