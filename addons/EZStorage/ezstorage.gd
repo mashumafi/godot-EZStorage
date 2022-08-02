@@ -56,7 +56,7 @@ class FileProvider:
 			if res != OK:
 				continue
 			var sha := file.get_buffer(32)
-			var data := file.get_line()
+			var data := file.get_buffer(file.get_len() - 32).get_string_from_utf8()
 			if data.sha256_buffer() == sha:
 				return str2var(data)
 
