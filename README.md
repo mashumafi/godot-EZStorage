@@ -44,13 +44,8 @@ Saves files using folders. This is a reliable and quick method but creates many 
 A low-level key-value storage using the file system.
 
 ```gdscript
-# Setup a custom directory
+# Setup a custom directory, do this before storing/fetching data
 EZStorage.set_directory_suffix(steam_id)
-
-# Wait for the directory suffix to be set
-# This gets called after `EZStorage.set_directory_suffix` is called
-# Misuse could cause a function wait forever
-yield(EZStorage, "directory_suffix_changed")
 
 # Store a value.
 EZStorage.store("my_section", "my_key", "my_value")
