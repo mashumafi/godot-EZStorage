@@ -49,7 +49,7 @@ EZStorage.set_directory_suffix(steam_id)
 
 # Wait for the directory suffix to be set
 # This gets called after `EZStorage.set_directory_suffix` is called
-# Only use this if you know what you are doing..
+# Misuse could cause a function wait forever
 yield(EZStorage, "directory_suffix_changed")
 
 # Store a value.
