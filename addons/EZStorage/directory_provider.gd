@@ -9,12 +9,8 @@ func _hash(s: String) -> String:
 	return s.sha256_text()
 
 
-func create_section(section: String):
-	var directory := Directory.new()
-	var path := get_root().plus_file(_hash(section))
-	var res := directory.make_dir_recursive(path)
-	if res != OK:
-		printerr("Could not create dir")
+func copy_to(_src: String, _dst: String):
+	pass
 
 
 func store(section: String, key: String, value):

@@ -11,7 +11,6 @@ class SectionCache:
 
 	func _init(p_section: String):
 		self._section = p_section
-		EZStorage.create_section(p_section)
 
 	# store(key: String, value: Any) -> void:
 	# Stores `value` into the `key`

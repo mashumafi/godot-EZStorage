@@ -23,10 +23,6 @@ func copy_to(_src: String, _dst: String):
 	pass
 
 
-func create_section(_section: String):
-	pass
-
-
 func store(_section: String, _key: String, _value):
 	pass
 
