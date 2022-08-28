@@ -257,10 +257,10 @@ func _get_header(kv_file: File) -> KVHeader:
 
 
 class SectionSegment:
-	var kv_file : File
-	var position : int
-	var next_position : int
-	
+	var kv_file: File
+	var position: int
+	var next_position: int
+
 	func _init(p_kv_file: File, p_segment_position: int):
 		self.kv_file = p_kv_file
 		self.position = p_segment_position
@@ -287,11 +287,12 @@ class SectionSegment:
 	func has_next() -> bool:
 		return next_position != 0
 
+
 class KVSegment:
-	var kv_file : File
-	var position : int
-	var next_position : int
-	
+	var kv_file: File
+	var position: int
+	var next_position: int
+
 	func _init(p_kv_file: File, p_segment_position: int):
 		self.kv_file = p_kv_file
 		self.position = p_segment_position
@@ -343,15 +344,21 @@ func store(section: String, key: String, value):
 		if current_sha == EMPTY_SHA:
 			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
 			key_segment_pos = kv_file.get_len()
-			transaction.append(WriteShaCommand.new(section_segment.get_key_position(section_idx), section_sha))
 			transaction.append(
-				WritePositionCommand.new(section_segment.get_value_position(section_idx), key_segment_pos)
+				WriteShaCommand.new(section_segment.get_key_position(section_idx), section_sha)
+			)
+			transaction.append(
+				WritePositionCommand.new(
+					section_segment.get_value_position(section_idx), key_segment_pos
+				)
 			)
 			break
 
 		if not section_segment.has_next():
 			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE * 2))
-			transaction.append(WritePositionCommand.new(section_segment.position, kv_file.get_len()))
+			transaction.append(
+				WritePositionCommand.new(section_segment.position, kv_file.get_len())
+			)
 			var new_section_segment_pos = kv_file.get_len()
 			transaction.append(
 				WriteShaCommand.new(
@@ -375,30 +382,28 @@ func store(section: String, key: String, value):
 	var key_idx := key.hash() % 5
 	var buffer := var2bytes(value)
 
-	while key_segment_pos != 0:
-		kv_file.seek(key_segment_pos)
-		var next_key_segment_pos := kv_file.get_64()
-		kv_file.seek(key_segment_pos + INT_SIZE + key_idx * KEY_SIZE)
+	var key_segment := KVSegment.new(kv_file, key_segment_pos)
+	while key_segment:
+		key_segment.seek_to_key(key_idx)
 		var current_sha := kv_file.get_buffer(SHA_SIZE)
 
-		var key_name_pos := key_segment_pos + INT_SIZE + key_idx * KEY_SIZE
 		if current_sha == key_sha:
-			transaction.append(WriteBufferCommand.new(key_name_pos + SHA_SIZE, buffer))
+			transaction.append(WriteBufferCommand.new(key_segment.get_value_position(key_idx), buffer))
 			break
 
 		if current_sha == EMPTY_SHA:
 			if false:  # IF buffer too big
 				transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
-			transaction.append(WriteShaCommand.new(key_name_pos, key_sha))
-			transaction.append(WriteBufferCommand.new(key_name_pos + SHA_SIZE, buffer))
+			transaction.append(WriteShaCommand.new(key_segment.get_key_position(key_idx), key_sha))
+			transaction.append(WriteBufferCommand.new(key_segment.get_value_position(key_idx), buffer))
 			break
 
-		if next_key_segment_pos != 0:
-			key_segment_pos = next_key_segment_pos
+		if key_segment.has_next():
+			key_segment = key_segment.next()
 		else:
 			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
 			transaction.append(WritePositionCommand.new(key_segment_pos, kv_file.get_len()))
-			key_name_pos = kv_file.get_len() + INT_SIZE + key_idx * KEY_SIZE
+			var key_name_pos = kv_file.get_len() + INT_SIZE + key_idx * KEY_SIZE
 			transaction.append(WriteShaCommand.new(key_name_pos, key_sha))
 			transaction.append(WriteBufferCommand.new(key_name_pos + SHA_SIZE, buffer))
 			break
