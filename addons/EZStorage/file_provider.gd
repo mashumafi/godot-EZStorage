@@ -402,7 +402,7 @@ func fetch(section: String, key: String, default = null):
 		if current_sha == key_sha:
 			var size := kv_file.get_64()
 			var buffer := kv_file.get_buffer(size)
-			return bytes2var(buffer)
+			return bytes2var(buffer, false)
 
 		key_segment_pos = next_key_segment_pos
 
@@ -414,7 +414,7 @@ func purge(section := "", key := "") -> bool:
 		var dir := Directory.new()
 		var rc := dir.remove(root.plus_file(KV_FILE_NAME))
 		if rc != OK:
-			printerr("Could not purge.")
+			printerr("Could not purge: ", rc)
 		return true
 
 	if key.empty():
