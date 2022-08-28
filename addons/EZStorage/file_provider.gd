@@ -4,42 +4,7 @@ enum CommandType { RESIZE, WRITE_POSITION, WRITE_SHA, WRITE_BUFFER }
 
 const KV_VERSION := 1
 const TRANSACTION_VERSION := 1
-const EMPTY_SHA := PoolByteArray(
-	[
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-	]
-)
+var EMPTY_SHA := PoolByteArray()
 const SEGMENT_SIZE := 408
 const SEGMENT_BUFFER_SIZE := SEGMENT_SIZE - 8
 const SECTION_SIZE := 40
@@ -57,12 +22,15 @@ class KVHeader:
 	var empty_segments_pos: int
 
 
-func _init():
-	_run_transaction(_get_file(KV_FILE_NAME))
-
-
 class Command:
-	pass
+	func execute(file: File):
+		pass
+
+	func encode(file: File):
+		pass
+
+	func decode(file: File):
+		pass
 
 
 class ResizeCommand:
@@ -182,6 +150,11 @@ class WriteBufferCommand:
 		buffer = file.get_buffer(file.get_64())
 
 
+func _init():
+	EMPTY_SHA.resize(32)
+	EMPTY_SHA.fill(0)
+
+
 func decode_transaction(transaction_file: File) -> Array:
 	var version := transaction_file.get_64()
 	var repr := transaction_file.get_64()
@@ -240,6 +213,9 @@ func _get_file(path: String) -> File:
 
 
 func _create_transaction(kv_file: File, transaction: Array):
+	if transaction.empty():
+		return
+
 	var transaction_file := _get_file(TRANSACTION_FILE_NAME)
 	encode_transaction(transaction_file, transaction)
 	_run_transaction(kv_file)
@@ -280,56 +256,118 @@ func _get_header(kv_file: File) -> KVHeader:
 	return header
 
 
+class SectionSegment:
+	var kv_file : File
+	var position : int
+	var next_position : int
+	
+	func _init(p_kv_file: File, p_segment_position: int):
+		self.kv_file = p_kv_file
+		self.position = p_segment_position
+		kv_file.seek(position)
+		self.next_position = kv_file.get_64()
+
+	func seek_to_key(index: int):
+		kv_file.seek(get_key_position(index))
+
+	func get_key_position(index: int) -> int:
+		return position + INT_SIZE + index * SECTION_SIZE
+
+	func seek_to_value(index: int):
+		kv_file.seek(get_value_position(index))
+
+	func get_value_position(index: int) -> int:
+		return position + INT_SIZE + index * SECTION_SIZE + SHA_SIZE
+
+	func next() -> SectionSegment:
+		if not has_next():
+			return null
+		return SectionSegment.new(kv_file, next_position)
+
+	func has_next() -> bool:
+		return next_position != 0
+
+class KVSegment:
+	var kv_file : File
+	var position : int
+	var next_position : int
+	
+	func _init(p_kv_file: File, p_segment_position: int):
+		self.kv_file = p_kv_file
+		self.position = p_segment_position
+		kv_file.seek(position)
+		self.next_position = kv_file.get_64()
+
+	func seek_to_key(index: int):
+		kv_file.seek(get_key_position(index))
+
+	func get_key_position(index: int) -> int:
+		return position + INT_SIZE + index * KEY_SIZE
+
+	func seek_to_value(index: int):
+		kv_file.seek(get_value_position(index))
+
+	func get_value_position(index: int) -> int:
+		return position + INT_SIZE + index * KEY_SIZE + SHA_SIZE
+
+	func next() -> KVSegment:
+		if not has_next():
+			return null
+		return KVSegment.new(kv_file, next_position)
+
+	func has_next() -> bool:
+		return next_position != 0
+
+
 func store(section: String, key: String, value):
+	_run_transaction(_get_file(KV_FILE_NAME))
+
 	var kv_file := _get_file(KV_FILE_NAME)
 	var header := _get_header(kv_file)
-	var section_segment_pos := header.section_segment_pos
+	var section_segment := SectionSegment.new(kv_file, header.section_segment_pos)
 
 	var section_sha := section.sha256_buffer()
 	var section_idx := section.hash() % 10
 	var transaction := []
 
 	var key_segment_pos := 0
-	while section_segment_pos != 0:
-		kv_file.seek(section_segment_pos)
-		var next_section_segment_pos := kv_file.get_64()
-		kv_file.seek(section_segment_pos + INT_SIZE + section_idx * SECTION_SIZE)
+	while section_segment:
+		section_segment.seek_to_key(section_idx)
 		var current_sha := kv_file.get_buffer(SHA_SIZE)
 
-		var section_name_pos := section_segment_pos + INT_SIZE + section_idx * SECTION_SIZE
 		if current_sha == section_sha:
-			kv_file.seek(section_name_pos + SHA_SIZE)
+			section_segment.seek_to_value(section_idx)
 			key_segment_pos = kv_file.get_64()
 			break
 
 		if current_sha == EMPTY_SHA:
 			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
 			key_segment_pos = kv_file.get_len()
-			transaction.append(WriteShaCommand.new(section_name_pos, section_sha))
+			transaction.append(WriteShaCommand.new(section_segment.get_key_position(section_idx), section_sha))
 			transaction.append(
-				WritePositionCommand.new(section_name_pos + SHA_SIZE, key_segment_pos)
+				WritePositionCommand.new(section_segment.get_value_position(section_idx), key_segment_pos)
 			)
 			break
 
-		if next_section_segment_pos == 0:
+		if not section_segment.has_next():
 			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE * 2))
-			transaction.append(WritePositionCommand.new(section_segment_pos, kv_file.get_len()))
-			section_segment_pos = kv_file.get_len()
+			transaction.append(WritePositionCommand.new(section_segment.position, kv_file.get_len()))
+			var new_section_segment_pos = kv_file.get_len()
 			transaction.append(
 				WriteShaCommand.new(
-					section_segment_pos + INT_SIZE + section_idx * SECTION_SIZE, section_sha
+					new_section_segment_pos + INT_SIZE + section_idx * SECTION_SIZE, section_sha
 				)
 			)
-			key_segment_pos = section_segment_pos + SEGMENT_SIZE
+			key_segment_pos = new_section_segment_pos + SEGMENT_SIZE
 			transaction.append(
 				WritePositionCommand.new(
-					section_segment_pos + INT_SIZE + section_idx * SECTION_SIZE + SHA_SIZE,
+					new_section_segment_pos + INT_SIZE + section_idx * SECTION_SIZE + SHA_SIZE,
 					key_segment_pos
 				)
 			)
 			break
 
-		section_segment_pos = next_section_segment_pos
+		section_segment = section_segment.next()
 
 	_create_transaction(kv_file, transaction)
 
@@ -358,7 +396,7 @@ func store(section: String, key: String, value):
 		if next_key_segment_pos != 0:
 			key_segment_pos = next_key_segment_pos
 		else:
-			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE * 2))
+			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
 			transaction.append(WritePositionCommand.new(key_segment_pos, kv_file.get_len()))
 			key_name_pos = kv_file.get_len() + INT_SIZE + key_idx * KEY_SIZE
 			transaction.append(WriteShaCommand.new(key_name_pos, key_sha))
@@ -369,6 +407,8 @@ func store(section: String, key: String, value):
 
 
 func fetch(section: String, key: String, default = null):
+	_run_transaction(_get_file(KV_FILE_NAME))
+
 	var kv_file := _get_file(KV_FILE_NAME)
 	var header := _get_header(kv_file)
 
@@ -410,7 +450,9 @@ func fetch(section: String, key: String, default = null):
 
 
 func purge(section := "", key := "") -> bool:
-	if section.empty() and key.empty():
+	_run_transaction(_get_file(KV_FILE_NAME))
+
+	if section.empty():
 		var dir := Directory.new()
 		var rc := dir.remove(root.plus_file(KV_FILE_NAME))
 		if rc != OK:
@@ -418,14 +460,20 @@ func purge(section := "", key := "") -> bool:
 		return true
 
 	if key.empty():
+		# Only section is defined
 		return true
 
+	# Both are defined
 	return true
 
 
 func get_sections() -> PoolStringArray:
+	_run_transaction(_get_file(KV_FILE_NAME))
+
 	return PoolStringArray()
 
 
 func get_keys(_section: String) -> PoolStringArray:
+	_run_transaction(_get_file(KV_FILE_NAME))
+
 	return PoolStringArray()
