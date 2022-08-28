@@ -99,7 +99,7 @@ EZCache.purge(["skipped_section"])
 
 
 # Yield until a key is changed on the cache
-var key = yield(my_cache, "changed")
+var key = yield(my_section, "changed")
 print("The following key changed in my_section: ", key)
 
 # Connect method and listen to key change events

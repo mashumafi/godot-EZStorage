@@ -15,6 +15,7 @@ func sk(section: String, keys: PoolStringArray) -> SectionKeys:
 
 
 func _ready():
+	EZStorage.set_directory_suffix("test")
 	EZStorage.purge()
 	test_storage()
 	test_cache()
@@ -40,10 +41,10 @@ func list_dir(path: String) -> PoolStringArray:
 	return ls
 
 func list_storage_dir() -> PoolStringArray:
-	return list_dir(Settings.get_directory())
+	return list_dir(Settings.get_directory().plus_file("test"))
 
 func map_to_storage(section_keys: Array) -> PoolStringArray:
-	var root := Settings.get_directory()
+	var root := Settings.get_directory().plus_file("test")
 	var results := PoolStringArray([root])
 	for section_key in section_keys:
 		results.append(root.plus_file(section_key.section))
