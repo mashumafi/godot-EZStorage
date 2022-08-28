@@ -1,9 +1,13 @@
 extends Resource
 
+enum StorageProviderType { DIRECTORY }
+
 const DIRECTORY_NAME := "application/storage/directory"
 const DIRECTORY_DEFAULT := "user://data"
 const DEBUG_FILENAMES_NAME := "application/storage/debug_filenames"
 const DEBUG_FILENAMES_DEFAULT := true
+const STORAGE_PROVIDER_NAME := "application/storage/provider"
+const STORAGE_PROVIDER_DEFAULT := StorageProviderType.DIRECTORY
 
 
 static func enum_to_hint(enumeration: Dictionary) -> String:
@@ -15,11 +19,18 @@ static func create_project_settings() -> void:
 		DIRECTORY_NAME, DIRECTORY_DEFAULT, PROPERTY_HINT_PLACEHOLDER_TEXT, DIRECTORY_DEFAULT
 	)
 	create_project_setting(DEBUG_FILENAMES_NAME, DEBUG_FILENAMES_DEFAULT)
+	create_project_setting(
+		STORAGE_PROVIDER_NAME,
+		STORAGE_PROVIDER_DEFAULT,
+		PROPERTY_HINT_ENUM,
+		enum_to_hint(StorageProviderType)
+	)
 
 
 static func clear_project_settings() -> void:
 	ProjectSettings.clear(DIRECTORY_NAME)
 	ProjectSettings.clear(DEBUG_FILENAMES_NAME)
+	ProjectSettings.clear(STORAGE_PROVIDER_NAME)
 
 
 static func create_project_setting(
@@ -49,4 +60,8 @@ static func get_directory() -> String:
 
 
 static func get_debug_filenames() -> bool:
+	return get_setting(DEBUG_FILENAMES_NAME, DEBUG_FILENAMES_DEFAULT)
+
+
+static func get_storage_provider() -> int:
 	return get_setting(DEBUG_FILENAMES_NAME, DEBUG_FILENAMES_DEFAULT)
