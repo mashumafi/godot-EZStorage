@@ -5,13 +5,16 @@ const REPLICATION := 2
 
 var root: String
 
+
 func _init() -> void:
 	root = Settings.get_directory()
+
 
 func _hash(s: String) -> String:
 	if OS.is_debug_build() and Settings.get_debug_filenames():
 		return s.http_escape()
 	return s.sha256_text()
+
 
 func create_section(section: String):
 	var directory := Directory.new()
@@ -19,6 +22,7 @@ func create_section(section: String):
 	var res := directory.make_dir_recursive(path)
 	if res != OK:
 		printerr("Could not create dir")
+
 
 func store(section: String, key: String, value):
 	var directory := Directory.new()
@@ -39,6 +43,7 @@ func store(section: String, key: String, value):
 		file.store_string(data)
 		file.close()
 
+
 func fetch(section: String, key: String, default = null):
 	var directory := Directory.new()
 	var path := root.plus_file(_hash(section)).plus_file(_hash(key))
@@ -57,6 +62,7 @@ func fetch(section: String, key: String, default = null):
 
 	return default
 
+
 func purge(section := "", key := "") -> bool:
 	var path := Settings.get_directory()
 	if not section.empty():
@@ -65,6 +71,7 @@ func purge(section := "", key := "") -> bool:
 			path = path.plus_file(_hash(key))
 
 	return _directory_remove_recursive(path)
+
 
 static func _directory_remove_recursive(path: String) -> bool:
 	var directory := Directory.new()
@@ -89,6 +96,7 @@ static func _directory_remove_recursive(path: String) -> bool:
 
 	return true
 
+
 static func _get_files(path) -> PoolStringArray:
 	var files := PoolStringArray()
 	var directory := Directory.new()
@@ -104,8 +112,10 @@ static func _get_files(path) -> PoolStringArray:
 
 	return files
 
+
 func get_sections() -> PoolStringArray:
 	return _get_files(root)
+
 
 func get_keys(section: String) -> PoolStringArray:
 	return _get_files(root.plus_file(_hash(section)))

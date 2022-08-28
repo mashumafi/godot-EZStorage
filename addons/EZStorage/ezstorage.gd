@@ -4,6 +4,8 @@ const Settings := preload("settings.gd")
 const StorageProvider := preload("storage_provider.gd")
 const DirectoryProvider := preload("directory_provider.gd")
 
+var provider := get_storage_provider()
+
 
 static func get_storage_provider() -> StorageProvider:
 	match Settings.get_storage_provider():
@@ -11,9 +13,6 @@ static func get_storage_provider() -> StorageProvider:
 			return DirectoryProvider.new()
 
 	return DirectoryProvider.new()
-
-
-var provider := get_storage_provider()
 
 
 # create_section(section: String) -> void
