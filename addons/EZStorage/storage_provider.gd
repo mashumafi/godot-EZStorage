@@ -1,10 +1,8 @@
 extends Reference
 
-
 const Settings := preload("settings.gd")
 
-
-var root : String setget set_root, get_root
+var root: String setget set_root, get_root
 
 
 func _init():
@@ -13,7 +11,7 @@ func _init():
 
 func set_root(path: String, copy := false) -> void:
 	if copy:
-		_copy_to(root, path)
+		copy_to(root, path)
 	root = path
 
 
@@ -21,23 +19,23 @@ func get_root() -> String:
 	return root
 
 
-func _copy_to(src: String, dst: String):
+func copy_to(_src: String, _dst: String):
 	pass
 
 
-func _create_section(_section: String):
+func create_section(_section: String):
 	pass
 
 
-func _store(_section: String, _key: String, _value):
+func store(_section: String, _key: String, _value):
 	pass
 
 
-func _fetch(_section: String, _key: String, _default = null):
+func fetch(_section: String, _key: String, _default = null):
 	return _default
 
 
-func _purge(_section := "", _key := "") -> bool:
+func purge(_section := "", _key := "") -> bool:
 	return false
 
 

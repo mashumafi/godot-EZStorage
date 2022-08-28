@@ -9,7 +9,7 @@ func _hash(s: String) -> String:
 	return s.sha256_text()
 
 
-func _create_section(section: String):
+func create_section(section: String):
 	var directory := Directory.new()
 	var path := get_root().plus_file(_hash(section))
 	var res := directory.make_dir_recursive(path)
@@ -17,7 +17,7 @@ func _create_section(section: String):
 		printerr("Could not create dir")
 
 
-func _store(section: String, key: String, value):
+func store(section: String, key: String, value):
 	var directory := Directory.new()
 	var path := get_root().plus_file(_hash(section)).plus_file(_hash(key))
 	var res := directory.make_dir_recursive(path)
@@ -37,7 +37,7 @@ func _store(section: String, key: String, value):
 		file.close()
 
 
-func _fetch(section: String, key: String, default = null):
+func fetch(section: String, key: String, default = null):
 	var directory := Directory.new()
 	var path := get_root().plus_file(_hash(section)).plus_file(_hash(key))
 	if not directory.dir_exists(path):
@@ -56,7 +56,7 @@ func _fetch(section: String, key: String, default = null):
 	return default
 
 
-func _purge(section := "", key := "") -> bool:
+func purge(section := "", key := "") -> bool:
 	var path := Settings.get_directory()
 	if not section.empty():
 		path = path.plus_file(_hash(section))
@@ -106,9 +106,9 @@ static func _get_files(path) -> PoolStringArray:
 	return files
 
 
-func _get_sections() -> PoolStringArray:
+func get_sections() -> PoolStringArray:
 	return _get_files(get_root())
 
 
-func _get_keys(section: String) -> PoolStringArray:
+func get_keys(section: String) -> PoolStringArray:
 	return _get_files(get_root().plus_file(_hash(section)))

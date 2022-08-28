@@ -22,6 +22,8 @@ Settings can be found under application/storage in the project settings.
 
 The directory used to save the data. It should be at least in `user://` and by default is `user://data`.
 
+If you need to further customize the directory use `EZStorage.set_directory_suffix(unique_id)`. This is useful to support multiple users.
+
 ### Debug Filenames
 
 When enabled file names will use html encoding making it easier to debug the files created.
@@ -42,6 +44,14 @@ Saves files using folders. This is a reliable and quick method but creates many 
 A low-level key-value storage using the file system.
 
 ```gdscript
+# Setup a custom directory
+EZStorage.set_directory_suffix(steam_id)
+
+# Wait for the directory suffix to be set
+# This gets called after `EZStorage.set_directory_suffix` is called
+# Only use this if you know what you are doing..
+yield(EZStorage, "directory_suffix_changed")
+
 # Store a value.
 EZStorage.store("my_section", "my_key", "my_value")
 

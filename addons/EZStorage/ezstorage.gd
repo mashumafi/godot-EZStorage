@@ -1,13 +1,12 @@
 extends Node
 
+signal directory_suffix_changed
+
 const Settings := preload("settings.gd")
 const StorageProvider := preload("storage_provider.gd")
 const DirectoryProvider := preload("directory_provider.gd")
 
 var provider := get_storage_provider()
-
-
-signal directory_suffix_changed
 
 
 static func get_storage_provider() -> StorageProvider:
@@ -31,7 +30,7 @@ func set_directory_suffix(suffix: String, copy := false):
 # Creates a directory for storing sections
 # @param section (String): the name of the section
 func create_section(section: String) -> void:
-	provider._create_section(section)
+	provider.create_section(section)
 
 
 # store(section: String, key: String, value: Any) -> void:
@@ -40,7 +39,7 @@ func create_section(section: String) -> void:
 # @param key (String): The name of the key.
 # @param value (Any): The value to store.
 func store(section: String, key: String, value) -> void:
-	provider._store(section, key, value)
+	provider.store(section, key, value)
 
 
 # fetch(section: String, key: String, default: Any = null) -> Any:
@@ -50,7 +49,7 @@ func store(section: String, key: String, value) -> void:
 # @param default (Any): The value returned if key/section does not exist.
 # @return value (Any): The result or `default` if none found.
 func fetch(section: String, key: String, default = null):
-	return provider._fetch(section, key, default)
+	return provider.fetch(section, key, default)
 
 
 # purge(section: String = "", key: String = "") -> bool
@@ -59,14 +58,14 @@ func fetch(section: String, key: String, default = null):
 # @oaram key (String): Optional key name, delete all keys if missing.
 # @return success (bool): The purge succeeded
 func purge(section := "", key := "") -> bool:
-	return provider._purge(section, key)
+	return provider.purge(section, key)
 
 
 # get_sections() -> PoolStringArray
 # Get all sections available.
 # @return sections (String): All sections available.
 func get_sections() -> PoolStringArray:
-	return provider._get_sections()
+	return provider.get_sections()
 
 
 # get_keys(section: String) -> PoolStringArray
@@ -74,4 +73,4 @@ func get_sections() -> PoolStringArray:
 # @param section (String): The name of the section.
 # @return keys (String): All keys in the section.
 func get_keys(section: String) -> PoolStringArray:
-	return provider._get_keys(section)
+	return provider.get_keys(section)
