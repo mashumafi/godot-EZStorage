@@ -1,7 +1,5 @@
 extends Node
 
-signal directory_suffix_changed
-
 const Settings := preload("settings.gd")
 const StorageProvider := preload("storage_provider.gd")
 const DirectoryProvider := preload("directory_provider.gd")
