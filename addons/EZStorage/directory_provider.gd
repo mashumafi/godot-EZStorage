@@ -57,7 +57,7 @@ func fetch(section: String, key: String, default = null):
 
 
 func purge(section := "", key := "") -> bool:
-	var path := Settings.get_directory()
+	var path := get_root()
 	if not section.empty():
 		path = path.plus_file(_hash(section))
 		if not key.empty():

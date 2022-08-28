@@ -21,7 +21,7 @@ static func get_storage_provider() -> StorageProvider:
 # @param suffix (String): the suffix appended to the root directory
 # @param copy (bool): copies files from the existing storage to the new path
 func set_directory_suffix(suffix: String, copy := false):
-	provider.set_root_directory(Settings.get_directory().plus_file(suffix), copy)
+	provider.set_root(Settings.get_directory().plus_file(suffix), copy)
 
 
 # create_section(section: String) -> void
