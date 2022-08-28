@@ -39,9 +39,9 @@ func purge(_section := "", _key := "") -> bool:
 	return false
 
 
-func _get_sections() -> PoolStringArray:
+func get_sections() -> PoolStringArray:
 	return PoolStringArray()
 
 
-func _get_keys(_section: String) -> PoolStringArray:
+func get_keys(_section: String) -> PoolStringArray:
 	return PoolStringArray()
