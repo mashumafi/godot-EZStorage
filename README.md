@@ -27,6 +27,14 @@ The directory used to save the data. It should be at least in `user://` and by d
 When enabled file names will use html encoding making it easier to debug the files created.
 This feature can be disabled to use filenames that would be used in release mode.
 
+### Provider
+
+The system used for saving data.
+
+#### Directory
+
+Saves files using folders. This is a reliable and quick method but creates many files on your system. It may not be ideal in some situations like with cloud saves.
+
 ## API
 
 ### EZStorage API
