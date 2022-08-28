@@ -4,7 +4,6 @@ enum CommandType { RESIZE, WRITE_POSITION, WRITE_SHA, WRITE_BUFFER }
 
 const KV_VERSION := 1
 const TRANSACTION_VERSION := 1
-var EMPTY_SHA := PoolByteArray()
 const SEGMENT_SIZE := 408
 const SEGMENT_BUFFER_SIZE := SEGMENT_SIZE - 8
 const SECTION_SIZE := 40
@@ -15,6 +14,8 @@ const KEY_BUFFER_SIZE := 48
 const KV_FILE_NAME := "kv"
 const TRANSACTION_FILE_NAME := "t"
 
+var empty_sha := PoolByteArray()
+
 
 class KVHeader:
 	var version: int
@@ -23,13 +24,13 @@ class KVHeader:
 
 
 class Command:
-	func execute(file: File):
+	func execute(_file: File):
 		pass
 
-	func encode(file: File):
+	func encode(_file: File):
 		pass
 
-	func decode(file: File):
+	func decode(_file: File):
 		pass
 
 
@@ -151,8 +152,8 @@ class WriteBufferCommand:
 
 
 func _init():
-	EMPTY_SHA.resize(32)
-	EMPTY_SHA.fill(0)
+	empty_sha.resize(32)
+	empty_sha.fill(0)
 
 
 func decode_transaction(transaction_file: File) -> Array:
@@ -267,11 +268,25 @@ class SectionSegment:
 		kv_file.seek(position)
 		self.next_position = kv_file.get_64()
 
+	func set_key(index: int, sha_buffer: PoolByteArray) -> WriteShaCommand:
+		return WriteShaCommand.new(get_key_position(index), sha_buffer)
+
+	func get_key(index: int) -> PoolByteArray:
+		seek_to_key(index)
+		return kv_file.get_buffer(SHA_SIZE)
+
 	func seek_to_key(index: int):
 		kv_file.seek(get_key_position(index))
 
 	func get_key_position(index: int) -> int:
 		return position + INT_SIZE + index * SECTION_SIZE
+
+	func set_value(index: int, position: int) -> WritePositionCommand:
+		return WritePositionCommand.new(get_value_position(index), position)
+
+	func get_value(index: int) -> int:
+		seek_to_value(index)
+		return kv_file.get_64()
 
 	func seek_to_value(index: int):
 		kv_file.seek(get_value_position(index))
@@ -298,6 +313,13 @@ class KVSegment:
 		self.position = p_segment_position
 		kv_file.seek(position)
 		self.next_position = kv_file.get_64()
+
+	func set_key(index: int, sha_buffer: PoolByteArray) -> WriteShaCommand:
+		return WriteShaCommand.new(get_key_position(index), sha_buffer)
+
+	func get_key(index: int) -> PoolByteArray:
+		seek_to_key(index)
+		return kv_file.get_buffer(SHA_SIZE)
 
 	func seek_to_key(index: int):
 		kv_file.seek(get_key_position(index))
@@ -333,25 +355,17 @@ func store(section: String, key: String, value):
 
 	var key_segment_pos := 0
 	while section_segment:
-		section_segment.seek_to_key(section_idx)
-		var current_sha := kv_file.get_buffer(SHA_SIZE)
+		var current_sha := section_segment.get_key(section_idx)
 
 		if current_sha == section_sha:
-			section_segment.seek_to_value(section_idx)
-			key_segment_pos = kv_file.get_64()
+			key_segment_pos = section_segment.get_value(section_idx)
 			break
 
-		if current_sha == EMPTY_SHA:
+		if current_sha == empty_sha:
 			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
 			key_segment_pos = kv_file.get_len()
-			transaction.append(
-				WriteShaCommand.new(section_segment.get_key_position(section_idx), section_sha)
-			)
-			transaction.append(
-				WritePositionCommand.new(
-					section_segment.get_value_position(section_idx), key_segment_pos
-				)
-			)
+			transaction.append(section_segment.set_key(section_idx, section_sha))
+			transaction.append(section_segment.set_value(section_idx, key_segment_pos))
 			break
 
 		if not section_segment.has_next():
@@ -384,18 +398,21 @@ func store(section: String, key: String, value):
 
 	var key_segment := KVSegment.new(kv_file, key_segment_pos)
 	while key_segment:
-		key_segment.seek_to_key(key_idx)
-		var current_sha := kv_file.get_buffer(SHA_SIZE)
+		var current_sha := key_segment.get_key(key_idx)
 
 		if current_sha == key_sha:
-			transaction.append(WriteBufferCommand.new(key_segment.get_value_position(key_idx), buffer))
+			transaction.append(
+				WriteBufferCommand.new(key_segment.get_value_position(key_idx), buffer)
+			)
 			break
 
-		if current_sha == EMPTY_SHA:
+		if current_sha == empty_sha:
 			if false:  # IF buffer too big
 				transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
 			transaction.append(WriteShaCommand.new(key_segment.get_key_position(key_idx), key_sha))
-			transaction.append(WriteBufferCommand.new(key_segment.get_value_position(key_idx), buffer))
+			transaction.append(
+				WriteBufferCommand.new(key_segment.get_value_position(key_idx), buffer)
+			)
 			break
 
 		if key_segment.has_next():
