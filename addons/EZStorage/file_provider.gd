@@ -289,6 +289,13 @@ class Segment:
 	func has_next() -> bool:
 		return next_position != 0
 
+	func get_children() -> PoolIntArray:
+		var positions := PoolIntArray()
+		var segment := next()
+		while segment:
+			positions.push_back(segment.position)
+			segment = segment.next()
+		return positions
 
 class SectionSegment:
 	extends Segment
@@ -327,6 +334,12 @@ class SectionSegment:
 			return null
 		return SectionSegment.new(kv_file, next_position)
 
+	func get_children() -> PoolIntArray:
+		var positions := .get_children()
+		for section in SECTION_COUNT:
+			positions.push_back(get_value(section))
+		return positions
+
 
 class KVSegment:
 	extends Segment
@@ -344,6 +357,10 @@ class KVSegment:
 	func seek_to_key(index: int):
 		kv_file.seek(get_key_position(index))
 
+	func get_size(index: int) -> int:
+		seek_to_value(index)
+		return kv_file.get_64()
+
 	func get_key_position(index: int) -> int:
 		return position + INT_SIZE + index * KV_SIZE
 
@@ -360,6 +377,13 @@ class KVSegment:
 		if not has_next():
 			return null
 		return KVSegment.new(kv_file, next_position)
+
+	func get_children() -> PoolIntArray:
+		var positions := .get_children()
+		for kv in KV_COUNT:
+			if get_size(kv) > KV_BUFFER_SIZE:
+				positions.push_back(kv_file.get_64())
+		return positions
 
 
 class EmptySegments:
