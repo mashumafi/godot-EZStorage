@@ -291,7 +291,7 @@ class Segment:
 
 	func get_children() -> PoolIntArray:
 		var positions := PoolIntArray()
-		var segment := next()
+		var segment := self
 		while segment:
 			positions.push_back(segment.position)
 			segment = segment.next()
@@ -335,9 +335,15 @@ class SectionSegment:
 		return SectionSegment.new(kv_file, next_position)
 
 	func get_children() -> PoolIntArray:
-		var positions := .get_children()
-		for section in SECTION_COUNT:
-			positions.push_back(get_value(section))
+		var positions := PoolIntArray()
+		var segment := self
+		while segment:
+			positions.push_back(segment.position)
+			for section in SECTION_COUNT:
+				var value := get_value(section)
+				if value != 0:
+					positions.append_array(SectionSegment.new(kv_file, value).get_children())
+			segment = segment.next_section()
 		return positions
 
 
@@ -379,10 +385,14 @@ class KVSegment:
 		return KVSegment.new(kv_file, next_position)
 
 	func get_children() -> PoolIntArray:
-		var positions := .get_children()
-		for kv in KV_COUNT:
-			if get_size(kv) > KV_BUFFER_SIZE:
-				positions.push_back(kv_file.get_64())
+		var positions := PoolIntArray()
+		var segment := self
+		while segment:
+			positions.push_back(segment.position)
+			for kv in KV_COUNT:
+				if get_size(kv) > KV_BUFFER_SIZE:
+					positions.append_array(KVSegment.new(kv_file, kv_file.get_64()).get_children())
+			segment = segment.next_kv()
 		return positions
 
 
@@ -443,9 +453,8 @@ class EmptySegments:
 		return position
 
 	func delete(segment: Segment, transaction: Array):
-		while segment:
-			_push_back(segment.position, transaction)
-			segment = segment.next()
+		for child in segment.get_children():
+			_push_back(child, transaction)
 
 	func next_empty() -> EmptySegments:
 		if not has_next():
