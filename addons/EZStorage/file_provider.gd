@@ -327,6 +327,9 @@ class KVSegment:
 	func get_key_position(index: int) -> int:
 		return position + INT_SIZE + index * KEY_SIZE
 
+	func set_value(index: int, buffer: PoolByteArray) -> WriteBufferCommand:
+		return WriteBufferCommand.new(get_value_position(index), buffer)
+
 	func seek_to_value(index: int):
 		kv_file.seek(get_value_position(index))
 
@@ -356,7 +359,6 @@ func store(section: String, key: String, value):
 	var key_segment_pos := 0
 	while section_segment:
 		var current_sha := section_segment.get_key(section_idx)
-
 		if current_sha == section_sha:
 			key_segment_pos = section_segment.get_value(section_idx)
 			break
@@ -399,20 +401,15 @@ func store(section: String, key: String, value):
 	var key_segment := KVSegment.new(kv_file, key_segment_pos)
 	while key_segment:
 		var current_sha := key_segment.get_key(key_idx)
-
 		if current_sha == key_sha:
-			transaction.append(
-				WriteBufferCommand.new(key_segment.get_value_position(key_idx), buffer)
-			)
+			transaction.append(key_segment.set_value(key_idx, buffer))
 			break
 
 		if current_sha == empty_sha:
 			if false:  # IF buffer too big
 				transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
-			transaction.append(WriteShaCommand.new(key_segment.get_key_position(key_idx), key_sha))
-			transaction.append(
-				WriteBufferCommand.new(key_segment.get_value_position(key_idx), buffer)
-			)
+			transaction.append(key_segment.set_key(key_idx, key_sha))
+			transaction.append(key_segment.set_value(key_idx, buffer))
 			break
 
 		if key_segment.has_next():
@@ -434,39 +431,32 @@ func fetch(section: String, key: String, default = null):
 	var kv_file := _get_file(KV_FILE_NAME)
 	var header := _get_header(kv_file)
 
-	var section_segment_pos := header.section_segment_pos
+	var section_segment := SectionSegment.new(kv_file, header.section_segment_pos)
 	var section_sha := section.sha256_buffer()
 	var section_idx := section.hash() % 10
 	var key_segment_pos := 0
-	while section_segment_pos != 0:
-		kv_file.seek(section_segment_pos)
-		var next_section_segment_pos := kv_file.get_64()
-		kv_file.seek(section_segment_pos + INT_SIZE + section_idx * SECTION_SIZE)
-		var current_sha := kv_file.get_buffer(SHA_SIZE)
-
+	while section_segment:
+		var current_sha := section_segment.get_key(section_idx)
 		if current_sha == section_sha:
 			key_segment_pos = kv_file.get_64()
 			break
 
-		section_segment_pos = next_section_segment_pos
+		section_segment = section_segment.next()
 
 	if key_segment_pos == 0:
 		return default
 
+	var key_segment := KVSegment.new(kv_file, key_segment_pos)
 	var key_sha := key.sha256_buffer()
 	var key_idx := key.hash() % 5
-	while key_segment_pos != 0:
-		kv_file.seek(key_segment_pos)
-		var next_key_segment_pos := kv_file.get_64()
-		kv_file.seek(key_segment_pos + INT_SIZE + key_idx * KEY_SIZE)
-		var current_sha := kv_file.get_buffer(SHA_SIZE)
-
+	while key_segment:
+		var current_sha := key_segment.get_key(key_idx)
 		if current_sha == key_sha:
 			var size := kv_file.get_64()
 			var buffer := kv_file.get_buffer(size)
 			return bytes2var(buffer, false)
 
-		key_segment_pos = next_key_segment_pos
+		key_segment = key_segment.next()
 
 	return default
 
