@@ -9,12 +9,13 @@ const SEGMENT_BUFFER_SIZE := SEGMENT_SIZE - 8
 const SECTION_SIZE := 40
 const SHA_SIZE := 32
 const INT_SIZE := 8
-const KEY_SIZE := 80
-const KEY_BUFFER_SIZE := 48
+const KV_SIZE := 80
+const KV_VALUE_SIZE := 48
+const KV_BUFFER_SIZE := KV_VALUE_SIZE - INT_SIZE
 const KV_FILE_NAME := "kv"
 const TRANSACTION_FILE_NAME := "t"
 const SECTION_COUNT := SEGMENT_BUFFER_SIZE / SECTION_SIZE
-const KV_COUNT := SEGMENT_BUFFER_SIZE / KEY_SIZE
+const KV_COUNT := SEGMENT_BUFFER_SIZE / KV_SIZE
 
 var empty_sha := PoolByteArray()
 
@@ -259,7 +260,7 @@ func _get_header(kv_file: File) -> KVHeader:
 	return header
 
 
-class SectionSegment:
+class Segment:
 	var kv_file: File
 	var position: int
 	var next_position: int
@@ -269,6 +270,13 @@ class SectionSegment:
 		self.position = p_segment_position
 		kv_file.seek(position)
 		self.next_position = kv_file.get_64()
+
+
+class SectionSegment:
+	extends Segment
+
+	func _init(p_kv_file: File, p_segment_position: int).(p_kv_file, p_segment_position):
+		pass
 
 	func set_next_position(next_position: int) -> WritePositionCommand:
 		return WritePositionCommand.new(position, next_position)
@@ -309,15 +317,13 @@ class SectionSegment:
 
 
 class KVSegment:
-	var kv_file: File
-	var position: int
-	var next_position: int
+	extends Segment
 
-	func _init(p_kv_file: File, p_segment_position: int):
-		self.kv_file = p_kv_file
-		self.position = p_segment_position
-		kv_file.seek(position)
-		self.next_position = kv_file.get_64()
+	func _init(p_kv_file: File, p_segment_position: int).(p_kv_file, p_segment_position):
+		pass
+
+	func set_next_position(next_position: int) -> WritePositionCommand:
+		return WritePositionCommand.new(position, next_position)
 
 	func set_key(index: int, sha_buffer: PoolByteArray) -> WriteShaCommand:
 		return WriteShaCommand.new(get_key_position(index), sha_buffer)
@@ -330,7 +336,7 @@ class KVSegment:
 		kv_file.seek(get_key_position(index))
 
 	func get_key_position(index: int) -> int:
-		return position + INT_SIZE + index * KEY_SIZE
+		return position + INT_SIZE + index * KV_SIZE
 
 	func set_value(index: int, buffer: PoolByteArray) -> WriteBufferCommand:
 		return WriteBufferCommand.new(get_value_position(index), buffer)
@@ -339,7 +345,7 @@ class KVSegment:
 		kv_file.seek(get_value_position(index))
 
 	func get_value_position(index: int) -> int:
-		return position + INT_SIZE + index * KEY_SIZE + SHA_SIZE
+		return position + INT_SIZE + index * KV_SIZE + SHA_SIZE
 
 	func next() -> KVSegment:
 		if not has_next():
@@ -351,15 +357,12 @@ class KVSegment:
 
 
 class EmptySegments:
-	var kv_file: File
-	var position: int
-	var next_position: int
+	extends Segment
 
-	func _init(p_kv_file: File, p_segment_position: int):
-		self.kv_file = p_kv_file
-		self.position = p_segment_position
-		kv_file.seek(position)
-		self.next_position = kv_file.get_64()
+	var size : int
+
+	func _init(p_kv_file: File, p_segment_position: int).(p_kv_file, p_segment_position):
+		size = kv_file.get_64()
 
 	func alloc(segments: int, transaction: Array) -> PoolIntArray:
 		transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE * segments))
@@ -431,7 +434,7 @@ func store(section: String, key: String, value):
 			break
 
 		if current_sha == empty_sha:
-			if false:  # IF buffer too big
+			if buffer.size() > KV_BUFFER_SIZE:
 				transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
 			transaction.append(key_segment.set_key(key_idx, key_sha))
 			transaction.append(key_segment.set_value(key_idx, buffer))
@@ -440,11 +443,11 @@ func store(section: String, key: String, value):
 		if key_segment.has_next():
 			key_segment = key_segment.next()
 		else:
-			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE))
-			transaction.append(WritePositionCommand.new(key_segment.position, kv_file.get_len()))
-			var key_name_pos = kv_file.get_len() + INT_SIZE + key_idx * KEY_SIZE
-			transaction.append(WriteShaCommand.new(key_name_pos, key_sha))
-			transaction.append(WriteBufferCommand.new(key_name_pos + SHA_SIZE, buffer))
+			var segment_positions := empty_segments.alloc(1, transaction)
+			transaction.append(key_segment.set_next_position(segment_positions[0]))
+			var new_key_segment := KVSegment.new(kv_file, segment_positions[0])
+			transaction.append(new_key_segment.set_key(key_idx, key_sha))
+			transaction.append(new_key_segment.set_value(key_idx, buffer))
 			break
 
 	_create_transaction(kv_file, transaction)
