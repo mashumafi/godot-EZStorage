@@ -213,4 +213,4 @@ func test_file_storage():
 
 	assert(EZStorage.purge("game"))
 
-	assert(EZStorage.purge())
+	#assert(EZStorage.purge())
