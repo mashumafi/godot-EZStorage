@@ -478,7 +478,7 @@ class EmptySegments:
 			eof += SEGMENT_SIZE * segments
 		return positions
 
-	func _seek_to_back(transaction: Array) -> SeekResult:
+	func _seek_to_back() -> SeekResult:
 		var back := size
 		if back * INT_SIZE < EMPTY_BUFFER_SIZE:
 			var value_position := position + INT_SIZE * 2 + back * INT_SIZE
@@ -487,7 +487,7 @@ class EmptySegments:
 
 		back -= EMPTY_BUFFER_SIZE / INT_SIZE
 
-		var segment : Segment = self
+		var segment: Segment = self
 		while segment.has_next():
 			segment = segment.next()
 			if back * INT_SIZE < SEGMENT_BUFFER_SIZE:
@@ -501,7 +501,7 @@ class EmptySegments:
 
 	func _push_back(index: int, transaction: Array):
 		size += 1
-		var result := _seek_to_back(transaction)
+		var result := _seek_to_back()
 		if result.segment:
 			var new_position := alloc(1, transaction)[0]
 			transaction.append(result.segment.set_next_position(new_position))
@@ -510,7 +510,7 @@ class EmptySegments:
 		transaction.append(WritePositionCommand.new(result.value_position, index))
 
 	func _pop_back(transaction: Array) -> int:
-		var result := _seek_to_back(transaction)
+		var result := _seek_to_back()
 		size -= 1
 		transaction.append(WritePositionCommand.new(position + INT_SIZE, size))
 		transaction.append(WritePositionCommand.new(result.value_position, 0))
@@ -537,7 +537,7 @@ class EmptySegments:
 
 		remaining -= EMPTY_BUFFER_SIZE / INT_SIZE
 
-		var segment : Segment = self
+		var segment: Segment = self
 		while segment.has_next() and remaining > 0:
 			segment = segment.next()
 			kv_file.seek(segment.position + INT_SIZE)
@@ -723,6 +723,8 @@ func validate() -> bool:
 	positions.append_array(empty_segments.get_children())
 	positions.append_array(section_segment.get_children())
 	positions.sort()
+
+	assert(positions.size() * SEGMENT_SIZE == kv_file.get_len())
 
 	var expected_position := 0
 	for position in positions:

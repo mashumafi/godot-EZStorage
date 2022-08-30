@@ -262,6 +262,8 @@ func test_file_storage():
 			var result = EZStorage.fetch(String(section), String(key))
 			assert(result == "world")
 
+	assert(EZStorage.validate())
+
 	assert(EZStorage.purge("game", "over"))
 
 	assert(EZStorage.purge("game"))
