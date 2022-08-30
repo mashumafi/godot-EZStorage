@@ -207,7 +207,7 @@ func test_file_storage():
 
 	EZStorage.store("game", "highscore", 101)
 
-	var sections := 10
+	var sections := 4
 	var keys := 3
 
 	# Multiple updates
@@ -262,12 +262,18 @@ func test_file_storage():
 			var result = EZStorage.fetch(String(section), String(key))
 			assert(result == "world")
 
+	kv_file_len = get_kv_file_len()
 	assert(EZStorage.validate())
 
 	assert(EZStorage.purge("game", "over"))
 
-	assert(EZStorage.purge("game"))
-
+	assert(kv_file_len == get_kv_file_len())
 	assert(EZStorage.validate())
 
-	#assert(EZStorage.purge())
+	assert(kv_file_len == get_kv_file_len())
+	assert(EZStorage.purge("game"))
+
+	assert(kv_file_len == get_kv_file_len())
+	assert(EZStorage.validate())
+
+	assert(EZStorage.purge())

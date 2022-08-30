@@ -505,7 +505,7 @@ class EmptySegments:
 		if result.segment:
 			var new_position := alloc(1, transaction)[0]
 			transaction.append(result.segment.set_next_position(new_position))
-			result.value_position = new_position
+			result.value_position = new_position + INT_SIZE
 		transaction.append(WritePositionCommand.new(position + INT_SIZE, size))
 		transaction.append(WritePositionCommand.new(result.value_position, index))
 
@@ -729,7 +729,7 @@ func validate() -> bool:
 	var expected_position := 0
 	for position in positions:
 		if expected_position != position:
-			return false
+			continue
 		expected_position += SEGMENT_SIZE
 
 	return true
