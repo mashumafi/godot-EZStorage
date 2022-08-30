@@ -1,6 +1,6 @@
 extends "storage_provider.gd"
 
-enum CommandType { RESIZE, WRITE_POSITION, WRITE_SHA, WRITE_BUFFER }
+enum CommandType { RESIZE, WRITE_POSITION, WRITE_SHA, WRITE_BUFFER, CLEAR_SEGMENT }
 
 const KV_VERSION := 1
 const TRANSACTION_VERSION := 1
@@ -81,9 +81,11 @@ class WriteCommand:
 	var position: int
 
 	func _init(p_position := 0):
+		assert(position >= 0)
 		self.position = p_position
 
 	func execute(file: File):
+		assert(position >= 0)
 		file.seek(position)
 
 	func encode(file: File):
@@ -91,6 +93,27 @@ class WriteCommand:
 
 	func decode(file: File):
 		position = file.get_64()
+
+
+class ClearSegmentCommand:
+	extends WriteCommand
+
+	func _init(p_position := 0, p_value := 0).(p_position):
+		pass
+
+	func execute(file: File):
+		.execute(file)
+		var clear := PoolByteArray()
+		clear.resize(SEGMENT_SIZE)
+		clear.fill(0)
+		file.store_buffer(clear)
+
+	func encode(file: File):
+		file.store_8(CommandType.CLEAR_SEGMENT)
+		.encode(file)
+
+	func decode(file: File):
+		.decode(file)
 
 
 class WritePositionCommand:
@@ -182,6 +205,8 @@ func decode_transaction(transaction_file: File) -> Array:
 				command = WriteShaCommand.new()
 			CommandType.WRITE_BUFFER:
 				command = WriteBufferCommand.new()
+			CommandType.CLEAR_SEGMENT:
+				command = ClearSegmentCommand.new()
 		command.decode(transaction_file)
 		transaction.push_back(command)
 	return transaction
@@ -291,10 +316,10 @@ class Segment:
 
 	func get_children() -> PoolIntArray:
 		var positions := PoolIntArray()
-		var segment := self
-		while segment:
-			positions.push_back(segment.position)
-			segment = segment.next()
+		positions.push_back(position)
+		var segment := next()
+		if segment:
+			positions.append_array(segment.get_children())
 		return positions
 
 class SectionSegment:
@@ -336,14 +361,16 @@ class SectionSegment:
 
 	func get_children() -> PoolIntArray:
 		var positions := PoolIntArray()
-		var segment := self
-		while segment:
-			positions.push_back(segment.position)
-			for section in SECTION_COUNT:
-				var value := get_value(section)
-				if value != 0:
-					positions.append_array(SectionSegment.new(kv_file, value).get_children())
-			segment = segment.next_section()
+		positions.push_back(position)
+		for section in SECTION_COUNT:
+			var value := get_value(section)
+			if value != 0:
+				var segment := KVSegment.new(kv_file, value)
+				positions.append_array(segment.get_children())
+
+		var segment := next_section()
+		if segment:
+			positions.append_array(segment.get_children())
 		return positions
 
 
@@ -363,14 +390,29 @@ class KVSegment:
 	func seek_to_key(index: int):
 		kv_file.seek(get_key_position(index))
 
+	func get_key_position(index: int) -> int:
+		return position + INT_SIZE + index * KV_SIZE
+
 	func get_size(index: int) -> int:
 		seek_to_value(index)
 		return kv_file.get_64()
 
-	func get_key_position(index: int) -> int:
-		return position + INT_SIZE + index * KV_SIZE
+	func set_extended(index: int, buffer: PoolByteArray) -> WriteBufferCommand:
+		assert(buffer.size() < KV_BUFFER_SIZE - INT_SIZE)
+		return WriteBufferCommand.new(get_value_position(index), buffer)
+
+	func get_extended(index: int) -> int:
+		seek_to_extended(index)
+		return kv_file.get_64()
+
+	func seek_to_extended(index: int):
+		kv_file.seek(get_extended_position(index))
+
+	func get_extended_position(index: int) -> int:
+		return position + INT_SIZE + index * KV_SIZE + SHA_SIZE + INT_SIZE
 
 	func set_value(index: int, buffer: PoolByteArray) -> WriteBufferCommand:
+		assert(buffer.size() < KV_BUFFER_SIZE)
 		return WriteBufferCommand.new(get_value_position(index), buffer)
 
 	func seek_to_value(index: int):
@@ -386,13 +428,16 @@ class KVSegment:
 
 	func get_children() -> PoolIntArray:
 		var positions := PoolIntArray()
-		var segment := self
-		while segment:
-			positions.push_back(segment.position)
-			for kv in KV_COUNT:
-				if get_size(kv) > KV_BUFFER_SIZE:
-					positions.append_array(KVSegment.new(kv_file, kv_file.get_64()).get_children())
-			segment = segment.next_kv()
+		positions.push_back(position)
+
+		for kv in KV_COUNT:
+			if get_size(kv) > KV_BUFFER_SIZE:
+				var segment := Segment.new(kv_file, get_extended(kv))
+				positions.append_array(segment.get_children())
+
+		var segment := next_kv()
+		if segment:
+			positions.append_array(segment.get_children())
 		return positions
 
 
@@ -400,9 +445,11 @@ class EmptySegments:
 	extends Segment
 
 	var size: int
+	var eof : int
 
 	func _init(p_kv_file: File, p_segment_position: int).(p_kv_file, p_segment_position):
 		size = kv_file.get_64()
+		eof = kv_file.get_len()
 
 	func alloc(segments: int, transaction: Array) -> PoolIntArray:
 		var positions := PoolIntArray()
@@ -413,14 +460,15 @@ class EmptySegments:
 			transaction.push_back(WritePositionCommand.new(position, size))
 
 		if segments > 0:
-			transaction.append(ResizeCommand.new(kv_file.get_len() + SEGMENT_SIZE * segments))
+			transaction.append(ResizeCommand.new(eof + SEGMENT_SIZE * segments))
 			for position in segments:
-				positions.push_back(kv_file.get_len() + SEGMENT_SIZE * position)
+				positions.push_back(eof + SEGMENT_SIZE * position)
+			eof += SEGMENT_SIZE * segments
 		return positions
 
 	func _seek_to_back(transaction: Array) -> int:
 		if size < EMPTY_BUFFER_SIZE:
-			kv_file.seek(position + 16 + size * 8)
+			kv_file.seek(position + INT_SIZE * 2 + size * INT_SIZE)
 			return kv_file.get_64()
 
 		size -= EMPTY_BUFFER_SIZE
@@ -428,7 +476,7 @@ class EmptySegments:
 		var next := next()
 		while next:
 			if size < SEGMENT_BUFFER_SIZE:
-				kv_file.seek(next.position + 8 + size * 8)
+				kv_file.seek(next.position + INT_SIZE + size * INT_SIZE)
 				return kv_file.get_64()
 
 			if not next.has_next():
@@ -443,18 +491,21 @@ class EmptySegments:
 
 	func _push_back(index: int, transaction: Array):
 		size += 1
-		var position := _seek_to_back(transaction)
-		transaction.append(WritePositionCommand.new(position, index))
+		_seek_to_back(transaction)
+		transaction.append(WritePositionCommand.new(position + INT_SIZE, size))
+		transaction.append(WritePositionCommand.new(kv_file.get_position() - INT_SIZE, index))
 
 	func _pop_back(transaction: Array) -> int:
-		var position := _seek_to_back(transaction)
+		var back_position := _seek_to_back(transaction)
 		size -= 1
-		transaction.append(WritePositionCommand.new(kv_file.get_position(), 0))
-		return position
+		transaction.append(WritePositionCommand.new(position + INT_SIZE, size))
+		transaction.append(WritePositionCommand.new(kv_file.get_position() - INT_SIZE, 0))
+		return back_position
 
 	func delete(segment: Segment, transaction: Array):
 		for child in segment.get_children():
 			_push_back(child, transaction)
+			transaction.push_back(ClearSegmentCommand.new(child))
 
 	func next_empty() -> EmptySegments:
 		if not has_next():
@@ -578,12 +629,51 @@ func purge(section := "", key := "") -> bool:
 			printerr("Could not purge: ", rc)
 		return true
 
+	var kv_file := _get_file(KV_FILE_NAME)
+	var header := _get_header(kv_file)
+	var empty_segments := EmptySegments.new(kv_file, header.empty_segments_pos)
+
+	var section_segment := SectionSegment.new(kv_file, header.section_segment_pos)
+	var section_sha := section.sha256_buffer()
+	var section_idx := section.hash() % SECTION_COUNT
+	var key_segment_pos := 0
+	while section_segment:
+		var current_sha := section_segment.get_key(section_idx)
+		if current_sha == section_sha:
+			key_segment_pos = kv_file.get_64()
+			break
+
+		section_segment = section_segment.next_section()
+
+	if key_segment_pos == 0:
+		return false
+
+	var key_segment := KVSegment.new(kv_file, key_segment_pos)
 	if key.empty():
-		# Only section is defined
+		var transaction := []
+		empty_segments.delete(key_segment, transaction)
+		transaction.append(section_segment.set_key(section_idx, empty_sha))
+		transaction.append(section_segment.set_value(section_idx, 0))
+		_create_transaction(kv_file, transaction)
 		return true
 
-	# Both are defined
-	return true
+	var key_sha := key.sha256_buffer()
+	var key_idx := key.hash() % KV_COUNT
+	while key_segment:
+		var current_sha := key_segment.get_key(key_idx)
+		if current_sha == key_sha:
+			var transaction := []
+			if key_segment.get_size(key_idx) > KV_BUFFER_SIZE:
+				var extended_segment := Segment.new(kv_file, key_segment.get_extended(key_idx))
+				empty_segments.delete(extended_segment, transaction)
+			transaction.append(key_segment.set_key(key_idx, empty_sha))
+			transaction.append(key_segment.set_value(key_idx, PoolByteArray()))
+			_create_transaction(kv_file, transaction)
+			return true
+
+		key_segment = key_segment.next_kv()
+
+	return false
 
 
 func get_sections() -> PoolStringArray:

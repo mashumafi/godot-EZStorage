@@ -202,12 +202,45 @@ func test_file_storage():
 
 	EZStorage.store("game", "highscore", 101)
 
-	for section in range(10):
-		for key in range(10):
+	var sections := 3
+	var keys := 3
+
+	# Multiple updates
+	for section in range(sections):
+		for key in range(keys):
 			for value in range(10):
 				EZStorage.store(String(section), String(key), value)
 				var result = EZStorage.fetch(String(section), String(key))
 				assert(result == value)
+
+	# Check again
+	for section in range(sections):
+		for key in range(keys):
+			var result = EZStorage.fetch(String(section), String(key))
+			assert(result == 9)
+
+	# Purge all keys
+	for section in range(sections):
+		for key in range(keys):
+			assert(EZStorage.purge(String(section), String(key)))
+
+	# Repopulate
+	for section in range(sections):
+		for key in range(keys):
+			EZStorage.store(String(section), String(key), "hello")
+			var result = EZStorage.fetch(String(section), String(key))
+			assert(result == "hello")
+
+	# Purge all sections
+	for section in range(sections):
+		assert(EZStorage.purge(String(section)))
+
+	# Repopulate
+	for section in range(sections):
+		for key in range(keys):
+			EZStorage.store(String(section), String(key), "world")
+			var result = EZStorage.fetch(String(section), String(key))
+			assert(result == "world")
 
 	assert(EZStorage.purge("game", "over"))
 
