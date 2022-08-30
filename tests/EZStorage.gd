@@ -181,6 +181,11 @@ func test_cache() -> void:
 		[hello_section, "new_key"],
 	])
 
+func get_kv_file_len() -> int:
+	var kv_file := File.new()
+	kv_file.open("user://data/test/kv", File.READ)
+	return kv_file.get_len()
+
 func test_file_storage():
 	assert_eq(EZStorage.fetch("hello", "world"), null)
 
@@ -202,7 +207,7 @@ func test_file_storage():
 
 	EZStorage.store("game", "highscore", 101)
 
-	var sections := 3
+	var sections := 10
 	var keys := 3
 
 	# Multiple updates
@@ -213,16 +218,25 @@ func test_file_storage():
 				var result = EZStorage.fetch(String(section), String(key))
 				assert(result == value)
 
+	var kv_file_len := get_kv_file_len()
+	assert(EZStorage.validate())
+
 	# Check again
 	for section in range(sections):
 		for key in range(keys):
 			var result = EZStorage.fetch(String(section), String(key))
 			assert(result == 9)
 
+	assert(kv_file_len == get_kv_file_len())
+	assert(EZStorage.validate())
+
 	# Purge all keys
 	for section in range(sections):
 		for key in range(keys):
 			assert(EZStorage.purge(String(section), String(key)))
+
+	assert(kv_file_len == get_kv_file_len())
+	assert(EZStorage.validate())
 
 	# Repopulate
 	for section in range(sections):
@@ -231,9 +245,15 @@ func test_file_storage():
 			var result = EZStorage.fetch(String(section), String(key))
 			assert(result == "hello")
 
+	assert(kv_file_len == get_kv_file_len())
+	assert(EZStorage.validate())
+
 	# Purge all sections
 	for section in range(sections):
 		assert(EZStorage.purge(String(section)))
+
+	assert(kv_file_len == get_kv_file_len())
+	assert(EZStorage.validate())
 
 	# Repopulate
 	for section in range(sections):
@@ -245,5 +265,7 @@ func test_file_storage():
 	assert(EZStorage.purge("game", "over"))
 
 	assert(EZStorage.purge("game"))
+
+	assert(EZStorage.validate())
 
 	#assert(EZStorage.purge())

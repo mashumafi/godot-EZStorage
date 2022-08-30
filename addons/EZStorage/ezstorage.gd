@@ -68,3 +68,7 @@ func get_sections() -> PoolStringArray:
 # @return keys (String): All keys in the section.
 func get_keys(section: String) -> PoolStringArray:
 	return provider.get_keys(section)
+
+
+func validate() -> bool:
+	return provider.validate()
