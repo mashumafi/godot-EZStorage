@@ -21,6 +21,9 @@ func _ready():
 		Settings.StorageProviderType.DIRECTORY:
 			test_storage()
 			test_cache()
+		Settings.StorageProviderType.DIRECTORY_V2:
+			test_storage2()
+			test_cache2()
 		Settings.StorageProviderType.FILE:
 			test_file_storage()
 	get_tree().quit()
@@ -56,6 +59,15 @@ func map_to_storage(section_keys: Array) -> PoolStringArray:
 			results.append(root.plus_file(section_key.section).plus_file(key))
 			results.append(root.plus_file(section_key.section).plus_file(key).plus_file("0"))
 			results.append(root.plus_file(section_key.section).plus_file(key).plus_file("1"))
+	return results
+
+func map_to_storage2(section_keys: Array) -> PoolStringArray:
+	var root := Settings.get_directory().plus_file("test")
+	var results := PoolStringArray([root])
+	for section_key in section_keys:
+		results.append(root.plus_file(section_key.section))
+		for key in section_key.keys:
+			results.append(root.plus_file(section_key.section).plus_file(key))
 	return results
 
 func assert_eq(left, right):
@@ -102,6 +114,48 @@ func test_storage() -> void:
 
 	assert(EZStorage.purge())
 	assert_eq(list_storage_dir(), map_to_storage([]))
+
+func test_storage2() -> void:
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+
+	assert_eq(EZStorage.fetch("hello", "world"), null)
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+
+	assert_eq(EZStorage.fetch("hello", "world", "demo"), "demo")
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+
+	EZStorage.store("hello", "world", "test")
+	assert_eq(list_storage_dir(), map_to_storage2([sk("hello", ["world"])]))
+
+	assert_eq(EZStorage.fetch("hello", "world"), "test")
+	assert_eq(list_storage_dir(), map_to_storage2([sk("hello", ["world"])]))
+
+	assert_eq(EZStorage.fetch("hello", "world", "demo"), "test")
+	assert_eq(list_storage_dir(), map_to_storage2([sk("hello", ["world"])]))
+
+	EZStorage.store("game", "over", 3)
+	assert_eq(list_storage_dir(), map_to_storage2([sk("game", ["over"]), sk("hello", ["world"])]))
+
+	assert_eq(EZStorage.fetch("game", "over"), 3)
+	assert_eq(list_storage_dir(), map_to_storage2([sk("game", ["over"]), sk("hello", ["world"])]))
+
+	assert_eq(EZStorage.fetch("game", "over", -1), 3)
+	assert_eq(list_storage_dir(), map_to_storage2([sk("game", ["over"]), sk("hello", ["world"])]))
+
+	EZStorage.store("game", "pi", 3.14)
+	assert_eq(list_storage_dir(), map_to_storage2([sk("game", ["over", "pi"]), sk("hello", ["world"])]))
+
+	EZStorage.store("game", "highscore", 101)
+	assert_eq(list_storage_dir(), map_to_storage2([sk("game", ["highscore", "over", "pi"]), sk("hello", ["world"])]))
+
+	assert(EZStorage.purge("game", "over"))
+	assert_eq(list_storage_dir(), map_to_storage2([sk("game", ["highscore", "pi"]), sk("hello", ["world"])]))
+
+	assert(EZStorage.purge("game"))
+	assert_eq(list_storage_dir(), map_to_storage2([sk("hello", ["world"])]))
+
+	assert(EZStorage.purge())
+	assert_eq(list_storage_dir(), map_to_storage2([]))
 
 class CacheListener:
 	var changes := []
@@ -176,6 +230,79 @@ func test_cache() -> void:
 
 	assert(EZStorage.purge())
 	assert_eq(list_storage_dir(), map_to_storage([]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+		[hello_section, "new_key"],
+	])
+
+func test_cache2() -> void:
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+
+	var hello_section := EZCache.get_section("hello")
+	var listener := CacheListener.new()
+	assert_eq(hello_section.connect("changed", listener, "_changed", [hello_section]), OK)
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+	assert_eq(listener.changes, [])
+
+	assert_eq(hello_section.fetch("world"), null)
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+	assert_eq(listener.changes, [])
+
+	assert_eq(hello_section.fetch("world", "test"), "test")
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+	assert_eq(listener.changes, [])
+
+	assert_eq(hello_section.fetch("world", "demo", true), "demo")
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+	assert_eq(listener.changes, [])
+
+	assert_eq(hello_section.fetch("world", "test"), "demo")
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+	assert_eq(listener.changes, [])
+
+	assert_eq(hello_section.fetch("world"), "demo")
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+	assert_eq(listener.changes, [])
+
+	hello_section.store("new_key", "new_value")
+	assert_eq(list_storage_dir(), map_to_storage2([sk("hello", ["new_key"])]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+	])
+
+	EZStorage.store("hello", "purge", true)
+	assert_eq(list_storage_dir(), map_to_storage2([sk("hello", ["new_key", "purge"])]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+	])
+
+	EZStorage.store("purge", "example", true)
+	assert_eq(list_storage_dir(), map_to_storage2([sk("purge", ["example"]), sk("hello", ["new_key", "purge"])]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+	])
+
+	assert(hello_section.purge(["new_key"]))
+	assert_eq(list_storage_dir(), map_to_storage2([sk("purge", ["example"]), sk("hello", ["new_key"])]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+	])
+
+	assert(EZCache.purge(["hello"]))
+	assert_eq(list_storage_dir(), map_to_storage2([sk("hello", ["new_key"])]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+	])
+
+	assert(EZCache.purge())
+	assert_eq(list_storage_dir(), map_to_storage2([]))
+	assert_eq(listener.changes, [
+		[hello_section, "new_key"],
+		[hello_section, "new_key"],
+	])
+
+	assert(EZStorage.purge())
+	assert_eq(list_storage_dir(), map_to_storage2([]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 		[hello_section, "new_key"],
