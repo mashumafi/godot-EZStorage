@@ -28,9 +28,66 @@ var empty_sha := PoolByteArray()
 
 
 class KVHeader:
+	signal run_transaction
+
 	var version: int
-	var section_segment_pos: int
-	var empty_segments_pos: int
+	var section_segment: SectionSegment
+	var empty_segments: EmptySegments
+
+	var kv_file: File
+
+	func _init(p_kv_file: File):
+		kv_file = p_kv_file
+
+	func parse():
+		if kv_file.get_len() < SEGMENT_SIZE:
+			ResizeCommand.add_segment(kv_file)
+
+		self.version = kv_file.get_64()
+		var section_segment_pos := kv_file.get_64()
+		var empty_segments_pos := kv_file.get_64()
+
+		if self.version == 0:
+			self.version = KV_VERSION
+			section_segment_pos = SEGMENT_SIZE
+			empty_segments_pos = SEGMENT_SIZE * 2
+			var transaction := []
+			transaction.append(ResizeCommand.new(SEGMENT_SIZE * 3))
+			transaction.append(WritePositionCommand.new(0, self.version))
+			transaction.append(WritePositionCommand.new(INT_SIZE * 1, section_segment_pos))
+			transaction.append(WritePositionCommand.new(INT_SIZE * 2, empty_segments_pos))
+			emit_signal("run_transaction", kv_file, transaction)
+
+		self.section_segment = SectionSegment.new(kv_file, section_segment_pos)
+		self.empty_segments = EmptySegments.new(kv_file, empty_segments_pos)
+
+	func validate() -> bool:
+		if version != KV_VERSION:
+			printerr("Invalid version")
+			return false
+
+		var positions := [0]
+		positions.append_array(empty_segments.get_children())
+		positions.append_array(section_segment.get_children())
+		positions.sort()
+
+		if positions.size() * SEGMENT_SIZE != kv_file.get_len():
+			printerr(
+				"Wrong size found:",
+				positions.size() * SEGMENT_SIZE,
+				" expected:",
+				kv_file.get_len()
+			)
+			return false
+
+		var expected_position := 0
+		for position in positions:
+			if expected_position != position:
+				printerr("Position mismatch")
+				return false
+			expected_position += SEGMENT_SIZE
+
+		return true
 
 
 class Command:
@@ -268,30 +325,6 @@ func _run_transaction(kv_file: File):
 		dir.remove(root.plus_file(TRANSACTION_FILE_NAME))
 
 
-func _get_header(kv_file: File) -> KVHeader:
-	var header := KVHeader.new()
-
-	if kv_file.get_len() < SEGMENT_SIZE:
-		ResizeCommand.add_segment(kv_file)
-
-	header.version = kv_file.get_64()
-	header.section_segment_pos = kv_file.get_64()
-	header.empty_segments_pos = kv_file.get_64()
-
-	if header.version == 0:
-		header.version = KV_VERSION
-		header.section_segment_pos = SEGMENT_SIZE
-		header.empty_segments_pos = SEGMENT_SIZE * 2
-		var transaction := []
-		transaction.append(ResizeCommand.new(SEGMENT_SIZE * 3))
-		transaction.append(WritePositionCommand.new(0, header.version))
-		transaction.append(WritePositionCommand.new(INT_SIZE * 1, header.section_segment_pos))
-		transaction.append(WritePositionCommand.new(INT_SIZE * 2, header.empty_segments_pos))
-		_create_transaction(kv_file, transaction)
-
-	return header
-
-
 class Segment:
 	var kv_file: File
 	var position: int
@@ -304,6 +337,7 @@ class Segment:
 		self.next_position = kv_file.get_64()
 
 	func set_next_position(next_position: int) -> WritePositionCommand:
+		assert(not next_position in [0, SEGMENT_SIZE, SEGMENT_SIZE * 2])
 		return WritePositionCommand.new(position, next_position)
 
 	func next() -> Segment:
@@ -399,7 +433,7 @@ class KVSegment:
 		return kv_file.get_64()
 
 	func set_extended(index: int, buffer: PoolByteArray) -> WriteBufferCommand:
-		assert(buffer.size() < KV_BUFFER_SIZE - INT_SIZE)
+		assert(buffer.size() < KV_BUFFER_SIZE - INT_SIZE, "You can only write 40 bytes")
 		return WriteBufferCommand.new(get_value_position(index), buffer)
 
 	func get_extended(index: int) -> int:
@@ -469,7 +503,6 @@ class EmptySegments:
 			while size > 0 and segments > 0:
 				positions.push_back(_pop_back(transaction))
 				segments -= 1
-			transaction.push_back(WritePositionCommand.new(position, size))
 
 		if segments > 0:
 			transaction.append(ResizeCommand.new(eof + SEGMENT_SIZE * segments))
@@ -497,23 +530,31 @@ class EmptySegments:
 
 			back -= SEGMENT_BUFFER_SIZE / INT_SIZE
 
+		if back == 0:
+			return SeekResult.new(0, segment.position + EMPTY_BUFFER_SIZE)
+
+		assert(back == 1)
 		return SeekResult.new(0, 0, segment)
 
 	func _push_back(index: int, transaction: Array):
-		size += 1
 		var result := _seek_to_back()
+		size += 1
+		assert(result.value == 0)
 		if result.segment:
-			var new_position := alloc(1, transaction)[0]
+			var new_position := alloc(1, transaction)[0]  # _pop_back(transaction)
 			transaction.append(result.segment.set_next_position(new_position))
 			result.value_position = new_position + INT_SIZE
 		transaction.append(WritePositionCommand.new(position + INT_SIZE, size))
 		transaction.append(WritePositionCommand.new(result.value_position, index))
 
 	func _pop_back(transaction: Array) -> int:
-		var result := _seek_to_back()
+		assert(size > 0)
 		size -= 1
+		var result := _seek_to_back()
+		assert(not result.segment)
 		transaction.append(WritePositionCommand.new(position + INT_SIZE, size))
 		transaction.append(WritePositionCommand.new(result.value_position, 0))
+		assert(not result.value in [0, SEGMENT_SIZE, SEGMENT_SIZE * 2])
 		return result.value
 
 	func delete(segment: Segment, transaction: Array):
@@ -549,13 +590,21 @@ class EmptySegments:
 		return positions
 
 
+func get_header(kv_file: File) -> KVHeader:
+	var header := KVHeader.new(kv_file)
+	var rc := header.connect("run_transaction", self, "_create_transaction")
+	assert(rc == OK)
+	header.parse()
+	return header
+
+
 func store(section: String, key: String, value):
 	_run_transaction(_get_file(KV_FILE_NAME))
 
 	var kv_file := _get_file(KV_FILE_NAME)
-	var header := _get_header(kv_file)
-	var section_segment := SectionSegment.new(kv_file, header.section_segment_pos)
-	var empty_segments := EmptySegments.new(kv_file, header.empty_segments_pos)
+	var header := get_header(kv_file)
+	var section_segment := header.section_segment
+	var empty_segments := header.empty_segments
 
 	var section_sha := section.sha256_buffer()
 	var section_idx := section.hash() % SECTION_COUNT
@@ -623,9 +672,9 @@ func fetch(section: String, key: String, default = null):
 	_run_transaction(_get_file(KV_FILE_NAME))
 
 	var kv_file := _get_file(KV_FILE_NAME)
-	var header := _get_header(kv_file)
+	var header := get_header(kv_file)
 
-	var section_segment := SectionSegment.new(kv_file, header.section_segment_pos)
+	var section_segment := header.section_segment
 	var section_sha := section.sha256_buffer()
 	var section_idx := section.hash() % SECTION_COUNT
 	var key_segment_pos := 0
@@ -656,6 +705,10 @@ func fetch(section: String, key: String, default = null):
 
 
 func purge(section := "", key := "") -> bool:
+	printerr("Purge is not supported")
+	return false  # TODO: Implement purge
+	# Deleting segments isn't working as expected
+
 	_run_transaction(_get_file(KV_FILE_NAME))
 
 	if section.empty():
@@ -666,10 +719,10 @@ func purge(section := "", key := "") -> bool:
 		return true
 
 	var kv_file := _get_file(KV_FILE_NAME)
-	var header := _get_header(kv_file)
-	var empty_segments := EmptySegments.new(kv_file, header.empty_segments_pos)
+	var header := get_header(kv_file)
+	var empty_segments := header.empty_segments
 
-	var section_segment := SectionSegment.new(kv_file, header.section_segment_pos)
+	var section_segment := header.section_segment
 	var section_sha := section.sha256_buffer()
 	var section_idx := section.hash() % SECTION_COUNT
 	var key_segment_pos := 0
@@ -714,25 +767,8 @@ func purge(section := "", key := "") -> bool:
 
 func validate() -> bool:
 	var kv_file := _get_file(KV_FILE_NAME)
-	var header := _get_header(kv_file)
-
-	var empty_segments := EmptySegments.new(kv_file, header.empty_segments_pos)
-	var section_segment := SectionSegment.new(kv_file, header.section_segment_pos)
-
-	var positions := [0]
-	positions.append_array(empty_segments.get_children())
-	positions.append_array(section_segment.get_children())
-	positions.sort()
-
-	assert(positions.size() * SEGMENT_SIZE == kv_file.get_len())
-
-	var expected_position := 0
-	for position in positions:
-		if expected_position != position:
-			continue
-		expected_position += SEGMENT_SIZE
-
-	return true
+	var header := get_header(kv_file)
+	return header.validate()
 
 
 func get_sections() -> PoolStringArray:

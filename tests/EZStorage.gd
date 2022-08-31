@@ -207,8 +207,8 @@ func test_file_storage():
 
 	EZStorage.store("game", "highscore", 101)
 
-	var sections := 4
-	var keys := 3
+	var sections := 7
+	var keys := 14
 
 	# Multiple updates
 	for section in range(sections):
@@ -251,6 +251,7 @@ func test_file_storage():
 	# Purge all sections
 	for section in range(sections):
 		assert(EZStorage.purge(String(section)))
+		assert(EZStorage.validate())
 
 	assert(kv_file_len == get_kv_file_len())
 	assert(EZStorage.validate())
