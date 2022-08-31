@@ -1,6 +1,6 @@
 extends Resource
 
-enum StorageProviderType { DIRECTORY }
+enum StorageProviderType { DIRECTORY, FILE }
 
 const DIRECTORY_NAME := "application/storage/directory"
 const DIRECTORY_DEFAULT := "user://data"
@@ -64,4 +64,4 @@ static func get_debug_filenames() -> bool:
 
 
 static func get_storage_provider() -> int:
-	return get_setting(DEBUG_FILENAMES_NAME, DEBUG_FILENAMES_DEFAULT)
+	return get_setting(STORAGE_PROVIDER_NAME, STORAGE_PROVIDER_DEFAULT)

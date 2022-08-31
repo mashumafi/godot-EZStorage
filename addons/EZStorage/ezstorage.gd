@@ -3,6 +3,7 @@ extends Node
 const Settings := preload("settings.gd")
 const StorageProvider := preload("storage_provider.gd")
 const DirectoryProvider := preload("directory_provider.gd")
+const FileProvider := preload("file_provider.gd")
 
 var provider := get_storage_provider()
 
@@ -11,6 +12,8 @@ static func get_storage_provider() -> StorageProvider:
 	match Settings.get_storage_provider():
 		Settings.StorageProviderType.DIRECTORY:
 			return DirectoryProvider.new()
+		Settings.StorageProviderType.FILE:
+			return FileProvider.new()
 
 	return DirectoryProvider.new()
 
@@ -22,13 +25,6 @@ static func get_storage_provider() -> StorageProvider:
 # @param copy (bool): copies files from the existing storage to the new path
 func set_directory_suffix(suffix: String, copy := false):
 	provider.set_root(Settings.get_directory().plus_file(suffix), copy)
-
-
-# create_section(section: String) -> void
-# Creates a directory for storing sections
-# @param section (String): the name of the section
-func create_section(section: String) -> void:
-	provider.create_section(section)
 
 
 # store(section: String, key: String, value: Any) -> void:
@@ -72,3 +68,7 @@ func get_sections() -> PoolStringArray:
 # @return keys (String): All keys in the section.
 func get_keys(section: String) -> PoolStringArray:
 	return provider.get_keys(section)
+
+
+func validate() -> bool:
+	return provider.validate()

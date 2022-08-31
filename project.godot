@@ -13,6 +13,7 @@ config_version=4
 config/name="EZStorage"
 run/main_scene="res://tests/EZStorage.tscn"
 config/icon="res://icon.png"
+storage/provider=1
 
 [autoload]
 
