@@ -3,6 +3,7 @@ extends Node
 const Settings := preload("settings.gd")
 const StorageProvider := preload("storage_provider.gd")
 const DirectoryProvider := preload("directory_provider.gd")
+const Directory2Provider := preload("directory2_provider.gd")
 const FileProvider := preload("file_provider.gd")
 
 var provider := get_storage_provider()
@@ -12,6 +13,8 @@ static func get_storage_provider() -> StorageProvider:
 	match Settings.get_storage_provider():
 		Settings.StorageProviderType.DIRECTORY:
 			return DirectoryProvider.new()
+		Settings.StorageProviderType.DIRECTORY_V2:
+			return Directory2Provider.new()
 		Settings.StorageProviderType.FILE:
 			return FileProvider.new()
 

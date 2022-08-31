@@ -65,20 +65,27 @@ func purge(section := "", key := "") -> bool:
 static func _directory_remove_recursive(path: String) -> bool:
 	var directory := Directory.new()
 
-	if directory.open(path) == OK:
-		if directory.list_dir_begin(true) != OK:
-			return false
-		var file_name := directory.get_next()
-		while file_name != "":
-			if directory.current_is_dir():
-				if not _directory_remove_recursive(path.plus_file(file_name)):
-					return false
-			else:
-				if directory.remove(file_name) != OK:
-					return false
-			file_name = directory.get_next()
+	if directory.file_exists(path):
+		directory.remove(path)
+		return not directory.file_exists(path)
 
-		if directory.remove(path) != OK:
+	if directory.dir_exists(path):
+		if directory.open(path) == OK:
+			if directory.list_dir_begin(true) != OK:
+				return false
+			var file_name := directory.get_next()
+			while file_name != "":
+				if directory.current_is_dir():
+					if not _directory_remove_recursive(path.plus_file(file_name)):
+						return false
+				else:
+					if directory.remove(file_name) != OK:
+						return false
+				file_name = directory.get_next()
+
+			if directory.remove(path) != OK:
+				return false
+		else:
 			return false
 	else:
 		return false

@@ -1,6 +1,6 @@
 extends Resource
 
-enum StorageProviderType { DIRECTORY, FILE }
+enum StorageProviderType { DIRECTORY, DIRECTORY_V2, FILE }
 
 const DIRECTORY_NAME := "application/storage/directory"
 const DIRECTORY_DEFAULT := "user://data"

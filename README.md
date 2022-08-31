@@ -37,6 +37,10 @@ The system used for saving data.
 
 Saves data using folders. This is a reliable and quick method but creates many files on your system. It may not be ideal in some situations like with cloud saves.
 
+#### Directory V2
+
+Similar to [Directory](#Directory) but uses less resources and is faster.
+
 #### File
 
 Saves data using a fixed number of files, currently 2, but it's slower and wastes memory compared to Directory.
@@ -46,7 +50,7 @@ Saves data using a fixed number of files, currently 2, but it's slower and waste
 | **Provider**   | **Status**   | **Storage** | **Performance** | **Files**                 | **Folders**                                     |
 |----------------|--------------|-------------|-----------------|---------------------------|-------------------------------------------------|
 | _Directory_    | Stable       | Medium      | Medium          | 2 for each key+value pair | 1 for each key+value pair 1 for each unique key |
-| _Directory V2_ | Planned      | Small       | Fast            | 1 for each key+value      | 1 for each unique key                           |
+| _Directory V2_ | Stable       | Small       | Fast            | 1 for each key+value      | 1 for each unique key                           |
 | _Files_        | Planned      | Medium      | Medium          | 1 for each key            | 1                                               |
 | _File_         | Experimental | Large       | Slow            | 2                         | 1                                               |
 
