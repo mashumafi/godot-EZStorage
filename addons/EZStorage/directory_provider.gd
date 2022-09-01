@@ -47,19 +47,42 @@ func fetch(section: String, key: String, default = null):
 	return default
 
 
-func purge(section := "", key := "") -> bool:
+func _has_ending(haystack: String, needles: PoolStringArray) -> bool:
+	for needle in needles:
+		if haystack.ends_with(needle):
+			return true
+	return false
+
+
+func purge(skip_sections: PoolStringArray) -> bool:
 	var path := get_root()
-	if not section.empty():
-		path = path.plus_file(Util.hash_filename(section))
-		if not key.empty():
-			path = path.plus_file(Util.hash_filename(key))
+	skip_sections = Util.hash_filenames(skip_sections)
+	var dirs := Util.get_dirs_in_dir(path)
+	var success := true
+	for dir in dirs:
+		if _has_ending(dir, skip_sections):
+			continue
+		success = Util.directory_remove_recursive(path.plus_file(dir)) && success
+	return success
+
+func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
+	var path := get_root()
+	path = path.plus_file(Util.hash_filename(section))
+	if skip_keys.empty():
+		return Util.directory_remove_recursive(path)
+
+	skip_keys = Util.hash_filenames(skip_keys)
+	var dirs := Util.get_dirs_in_dir(path)
+	var success := true
+	for dir in dirs:
+		if _has_ending(dir, skip_keys):
+			continue
+		success = Util.directory_remove_recursive(path.plus_file(dir)) && success
+	return success
+
+func purge_section_key(section: String, key: String) -> bool:
+	var path := get_root()
+	path = path.plus_file(Util.hash_filename(section))
+	path = path.plus_file(Util.hash_filename(key))
 
 	return Util.directory_remove_recursive(path)
-
-
-func get_sections() -> PoolStringArray:
-	return Util.get_dirs_in_dir(get_root())
-
-
-func get_keys(section: String) -> PoolStringArray:
-	return Util.get_dirs_in_dir(get_root().plus_file(Util.hash_filename(section)))

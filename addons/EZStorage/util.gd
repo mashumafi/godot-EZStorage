@@ -19,6 +19,12 @@ static func hash_filename(s: String) -> String:
 	return s.sha256_text()
 
 
+static func hash_filenames(s: PoolStringArray) -> PoolStringArray:
+	for i in range(s.size()):
+		s[i] = hash_filename(s[i])
+	return s
+
+
 static func decode(buffer: Array, decoder: Dictionary) -> Command:
 	if buffer.empty():
 		return null

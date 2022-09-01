@@ -84,7 +84,13 @@ func fetch(section: String, key: String, default = null):
 	return keys.get(key, default)
 
 
-func purge(section := "", key := "") -> bool:
+func purge(skip_sections: PoolStringArray) -> bool:
+	return false
+
+func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
+	return false
+
+func purge_section_key(section: String, key: String) -> bool:
 	Util.run_migration(get_root(), decoder)
 	var command: Util.Command
 	if section and key:

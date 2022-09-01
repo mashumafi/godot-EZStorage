@@ -88,15 +88,13 @@ func fetch(section: String, key: String, default = null):
 	return bytes2var(data)
 
 
-func purge(section := "", key := "") -> bool:
+func purge(skip_sections: PoolStringArray) -> bool:
+	return false
+
+func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
+	return false
+
+func purge_section_key(section: String, key: String) -> bool:
 	Util.run_migration(get_root(), decoder)
 	var command := PurgeCommand.new(Util.hash_filename(section), Util.hash_filename(key))
 	return Util.execute(get_root(), command)
-
-
-func get_sections() -> PoolStringArray:
-	return Util.get_all_in_dir(get_root())
-
-
-func get_keys(section: String) -> PoolStringArray:
-	return Util.get_all_in_dir(get_root().plus_file(Util.hash_filename(section)))

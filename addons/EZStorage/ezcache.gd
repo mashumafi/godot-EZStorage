@@ -1,5 +1,7 @@
 extends Node
 
+const Util := preload("util.gd")
+
 var _sections := {}
 
 
@@ -41,19 +43,27 @@ class SectionCache:
 			_keys[key] = result
 		return result
 
-	# purge(skip_keys: PoolStringArray = []) -> bool
-	# Remove keys from the cache and file system.
-	# @param skip_keys (PoolStringArray): The keys to prevent deletion.
+	# purge(key: String) -> bool
+	# Removes a key from the cache and file system.
+	# @param key (String): The keys to delete.
 	# @return all_success (bool): All purging was a success.
-	func purge(skip_keys: PoolStringArray = []) -> bool:
-		var all_success := true
-		for key in EZStorage.get_keys(_section):
+	func purge(key: String) -> bool:
+		var success := EZStorage.purge_section_key(_section, key)
+		if _keys.erase(key) and success:
+			emit_signal("changed", key)
+		return success
+
+	# purge_all(skip_keys: PoolStringArray = []) -> bool
+	# Remove keys from the cache and file system.
+	# @param skip_keys (PoolStringArray): The keys to keep.
+	# @return all_success (bool): All purging was a success.
+	func purge_all(skip_keys: PoolStringArray = []) -> bool:
+		for key in _keys:
 			if not key in skip_keys:
-				var success := EZStorage.purge(_section, key)
-				all_success = all_success && success
-				if success and _keys.erase(key):
+				var success = EZStorage.purge_section_key(_section, key)
+				if _keys.erase(key) and success:
 					emit_signal("changed", key)
-		return all_success
+		return EZStorage.purge_section(_section, skip_keys)
 
 
 # get_section(section: String) -> SectionCache
@@ -73,14 +83,9 @@ func get_section(section: String) -> SectionCache:
 # Remove sections from the cache and file system.
 # @param skip_sections (PoolStringArray): The sections to prevent deletion.
 # @return all_success (bool): All purging was a success.
-func purge(skip_sections: PoolStringArray = []) -> bool:
-	var all_success := true
-	for section in EZStorage.get_sections():
+func purge_all(skip_sections: PoolStringArray = []) -> bool:
+	for section in _sections:
 		if not section in skip_sections:
-			if _sections.has(section):
-				all_success = _sections[section].purge() && all_success
-				all_success = EZStorage.purge(section) && all_success
-				all_success = _sections.erase(section) && all_success
-			else:
-				all_success = EZStorage.purge(section) && all_success
-	return all_success
+			_sections[section].purge_all()
+			_sections.erase(section)
+	return EZStorage.purge(skip_sections)

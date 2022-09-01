@@ -704,7 +704,13 @@ func fetch(section: String, key: String, default = null):
 	return default
 
 
-func purge(section := "", key := "") -> bool:
+func purge(skip_sections: PoolStringArray) -> bool:
+	return false
+
+func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
+	return false
+
+func purge_section_key(section: String, key: String) -> bool:
 	printerr("Purge is not supported")
 	return false  # TODO: Implement purge
 	# Deleting segments isn't working as expected
