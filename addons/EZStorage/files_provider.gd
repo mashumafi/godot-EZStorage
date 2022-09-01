@@ -8,7 +8,7 @@ var decoder := {
 
 
 func read_section(section: String) -> Dictionary:
-	var path := root.plus_file(section)
+	var path := root.plus_file(Util.hash_filename(section))
 	var directory := Directory.new()
 	if directory.file_exists(path):
 		var file := File.new()
@@ -72,7 +72,7 @@ func copy_to(_src: String, _dst: String):
 
 func store(section: String, key: String, value) -> bool:
 	Util.run_migration(get_root(), decoder)
-	var keys := read_section(Util.hash_filename(section))
+	var keys := read_section(section)
 	keys[key] = value
 	var command := StoreCommand.new(Util.hash_filename(section), keys)
 	return Util.execute(get_root(), command)
@@ -109,7 +109,7 @@ func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
 
 func purge_section_key(section: String, key: String) -> bool:
 	Util.run_migration(get_root(), decoder)
-	var keys := read_section(Util.hash_filename(section))
+	var keys := read_section(section)
 	if not keys.has(key):
 		return false
 	keys.erase(key)
