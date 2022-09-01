@@ -1,13 +1,13 @@
 extends Resource
 
-enum StorageProviderType { DIRECTORY, DIRECTORY_V2, FILE }
+enum StorageProviderType { DIRECTORY, DIRECTORY_V2, FILES, FILE }
 
 const DIRECTORY_NAME := "application/storage/directory"
 const DIRECTORY_DEFAULT := "user://data"
 const DEBUG_FILENAMES_NAME := "application/storage/debug_filenames"
 const DEBUG_FILENAMES_DEFAULT := true
 const STORAGE_PROVIDER_NAME := "application/storage/provider"
-const STORAGE_PROVIDER_DEFAULT := StorageProviderType.DIRECTORY
+const STORAGE_PROVIDER_DEFAULT := StorageProviderType.DIRECTORY_V2
 
 
 static func enum_to_hint(enumeration: Dictionary) -> String:

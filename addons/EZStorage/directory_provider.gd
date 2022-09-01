@@ -1,12 +1,7 @@
 extends "storage_provider.gd"
 
+const Util := preload("util.gd")
 const REPLICATION := 2
-
-
-func _hash(s: String) -> String:
-	if OS.is_debug_build() and Settings.get_debug_filenames():
-		return s.http_escape()
-	return s.sha256_text()
 
 
 func copy_to(_src: String, _dst: String):
@@ -15,7 +10,7 @@ func copy_to(_src: String, _dst: String):
 
 func store(section: String, key: String, value):
 	var directory := Directory.new()
-	var path := get_root().plus_file(_hash(section)).plus_file(_hash(key))
+	var path := get_root().plus_file(Util.hash_filename(section)).plus_file(Util.hash_filename(key))
 	var res := directory.make_dir_recursive(path)
 	if res != OK:
 		printerr("Could not create dir")
@@ -35,7 +30,7 @@ func store(section: String, key: String, value):
 
 func fetch(section: String, key: String, default = null):
 	var directory := Directory.new()
-	var path := get_root().plus_file(_hash(section)).plus_file(_hash(key))
+	var path := get_root().plus_file(Util.hash_filename(section)).plus_file(Util.hash_filename(key))
 	if not directory.dir_exists(path):
 		return default
 
@@ -55,63 +50,16 @@ func fetch(section: String, key: String, default = null):
 func purge(section := "", key := "") -> bool:
 	var path := get_root()
 	if not section.empty():
-		path = path.plus_file(_hash(section))
+		path = path.plus_file(Util.hash_filename(section))
 		if not key.empty():
-			path = path.plus_file(_hash(key))
+			path = path.plus_file(Util.hash_filename(key))
 
-	return _directory_remove_recursive(path)
-
-
-static func _directory_remove_recursive(path: String) -> bool:
-	var directory := Directory.new()
-
-	if directory.file_exists(path):
-		directory.remove(path)
-		return not directory.file_exists(path)
-
-	if directory.dir_exists(path):
-		if directory.open(path) == OK:
-			if directory.list_dir_begin(true) != OK:
-				return false
-			var file_name := directory.get_next()
-			while file_name != "":
-				if directory.current_is_dir():
-					if not _directory_remove_recursive(path.plus_file(file_name)):
-						return false
-				else:
-					if directory.remove(file_name) != OK:
-						return false
-				file_name = directory.get_next()
-
-			if directory.remove(path) != OK:
-				return false
-		else:
-			return false
-	else:
-		return false
-
-	return true
-
-
-static func _get_files(path) -> PoolStringArray:
-	var files := PoolStringArray()
-	var directory := Directory.new()
-
-	if directory.open(path) == OK:
-		if directory.list_dir_begin(true) != OK:
-			return files
-		var file_name := directory.get_next()
-		while file_name != "":
-			if directory.current_is_dir():
-				files.append(file_name.get_file().http_unescape())
-			file_name = directory.get_next()
-
-	return files
+	return Util.directory_remove_recursive(path)
 
 
 func get_sections() -> PoolStringArray:
-	return _get_files(get_root())
+	return Util.get_dirs_in_dir(get_root())
 
 
 func get_keys(section: String) -> PoolStringArray:
-	return _get_files(get_root().plus_file(_hash(section)))
+	return Util.get_dirs_in_dir(get_root().plus_file(Util.hash_filename(section)))
