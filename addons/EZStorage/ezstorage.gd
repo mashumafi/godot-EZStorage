@@ -4,6 +4,7 @@ const Settings := preload("settings.gd")
 const StorageProvider := preload("storage_provider.gd")
 const DirectoryProvider := preload("directory_provider.gd")
 const Directory2Provider := preload("directory2_provider.gd")
+const FilesProvider := preload("files_provider.gd")
 const FileProvider := preload("file_provider.gd")
 
 var provider := get_storage_provider()
@@ -15,6 +16,8 @@ static func get_storage_provider() -> StorageProvider:
 			return DirectoryProvider.new()
 		Settings.StorageProviderType.DIRECTORY_V2:
 			return Directory2Provider.new()
+		Settings.StorageProviderType.FILES:
+			return FilesProvider.new()
 		Settings.StorageProviderType.FILE:
 			return FileProvider.new()
 
@@ -35,8 +38,8 @@ func set_directory_suffix(suffix: String, copy := false):
 # @param section (String): The name of the section.
 # @param key (String): The name of the key.
 # @param value (Any): The value to store.
-func store(section: String, key: String, value) -> void:
-	provider.store(section, key, value)
+func store(section: String, key: String, value) -> bool:
+	return provider.store(section, key, value)
 
 
 # fetch(section: String, key: String, default: Any = null) -> Any:
