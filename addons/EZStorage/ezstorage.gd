@@ -52,28 +52,30 @@ func fetch(section: String, key: String, default = null):
 	return provider.fetch(section, key, default)
 
 
-# purge(section: String = "", key: String = "") -> bool
-# Delete specified `section` and/or `key` from the file system.
-# @param section (String): Optional section name, delete all sections if missing.
-# @oaram key (String): Optional key name, delete all keys if missing.
-# @return success (bool): The purge succeeded
-func purge(section := "", key := "") -> bool:
-	return provider.purge(section, key)
+# purge(skip_sections: PoolStringArray = []) -> bool
+# Delete all sections except those listed.
+# @param skip_sections (PoolStringArray): Sections to skip.
+# @return success (bool): The purge succeeded.
+func purge(skip_sections: PoolStringArray = []) -> bool:
+	return provider.purge(skip_sections)
 
 
-# get_sections() -> PoolStringArray
-# Get all sections available.
-# @return sections (String): All sections available.
-func get_sections() -> PoolStringArray:
-	return provider.get_sections()
+# purge_section(section: String, skip_keys: PoolStringArray = []) -> bool
+# Delete specified `section` from the file system.
+# @param section (String): Section to delete.
+# @param skip_keys (PoolStringArray): Keys to skip seleting..
+# @return success (bool): The purge succeeded.
+func purge_section(section: String, skip_keys: PoolStringArray = []) -> bool:
+	return provider.purge_section(section, skip_keys)
 
 
-# get_keys(section: String) -> PoolStringArray
-# Get all keys for the named `section`.
-# @param section (String): The name of the section.
-# @return keys (String): All keys in the section.
-func get_keys(section: String) -> PoolStringArray:
-	return provider.get_keys(section)
+# purge_section_key(section: String, key: String) -> bool
+# Delete specified `section` `key` from the file system.
+# @param section (String): Section name the key belongs to.
+# @oaram key (String): Key to delete from the section.
+# @return success (bool): The purge succeeded.
+func purge_section_key(section: String, key: String) -> bool:
+	return provider.purge_section_key(section, key)
 
 
 func validate() -> bool:

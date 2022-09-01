@@ -704,7 +704,15 @@ func fetch(section: String, key: String, default = null):
 	return default
 
 
-func purge(section := "", key := "") -> bool:
+func purge(_skip_sections: PoolStringArray) -> bool:
+	return false
+
+
+func purge_section(_section: String, _skip_keys: PoolStringArray) -> bool:
+	return false
+
+
+func purge_section_key(section: String, key: String) -> bool:
 	printerr("Purge is not supported")
 	return false  # TODO: Implement purge
 	# Deleting segments isn't working as expected
@@ -769,15 +777,3 @@ func validate() -> bool:
 	var kv_file := _get_file(KV_FILE_NAME)
 	var header := get_header(kv_file)
 	return header.validate()
-
-
-func get_sections() -> PoolStringArray:
-	_run_transaction(_get_file(KV_FILE_NAME))
-
-	return PoolStringArray()
-
-
-func get_keys(_section: String) -> PoolStringArray:
-	_run_transaction(_get_file(KV_FILE_NAME))
-
-	return PoolStringArray()

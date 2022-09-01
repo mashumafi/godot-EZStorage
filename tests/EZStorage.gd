@@ -34,12 +34,12 @@ func _ready():
 	get_tree().quit()
 
 func list_dir(path: String) -> PoolStringArray:
-	var ls := PoolStringArray([path])
+	var ls := [path]
 	var directory := Directory.new()
 
 	if directory.open(path) == OK:
 		if directory.list_dir_begin(true) != OK:
-			return ls
+			return PoolStringArray(ls)
 		var file_name := directory.get_next()
 		while file_name != "":
 			if directory.current_is_dir():
@@ -48,39 +48,43 @@ func list_dir(path: String) -> PoolStringArray:
 				ls.append(path.plus_file(file_name))
 			file_name = directory.get_next()
 	else:
-		return ls
+		return PoolStringArray(ls)
 
-	return ls
+	ls.sort()
+	return PoolStringArray(ls)
 
 func list_storage_dir() -> PoolStringArray:
 	return list_dir(Settings.get_directory().plus_file("test"))
 
 func map_to_directory_storage(section_keys: Array) -> PoolStringArray:
 	var root := Settings.get_directory().plus_file("test")
-	var results := PoolStringArray([root])
+	var results := [root]
 	for section_key in section_keys:
 		results.append(root.plus_file(section_key.section))
 		for key in section_key.keys:
 			results.append(root.plus_file(section_key.section).plus_file(key))
 			results.append(root.plus_file(section_key.section).plus_file(key).plus_file("0"))
 			results.append(root.plus_file(section_key.section).plus_file(key).plus_file("1"))
-	return results
+	results.sort()
+	return PoolStringArray(results)
 
 func map_to_directory2_storage(section_keys: Array) -> PoolStringArray:
 	var root := Settings.get_directory().plus_file("test")
-	var results := PoolStringArray([root])
+	var results := [root]
 	for section_key in section_keys:
 		results.append(root.plus_file(section_key.section))
 		for key in section_key.keys:
 			results.append(root.plus_file(section_key.section).plus_file(key))
-	return results
+	results.sort()
+	return PoolStringArray(results)
 
 func map_to_files_storage(section_keys: Array) -> PoolStringArray:
 	var root := Settings.get_directory().plus_file("test")
-	var results := PoolStringArray([root])
+	var results := [root]
 	for section_key in section_keys:
 		results.append(root.plus_file(section_key.section))
-	return results
+	results.sort()
+	return PoolStringArray(results)
 
 func assert_eq(left, right):
 	assert(left == right)
@@ -118,10 +122,10 @@ func test_directory_storage() -> void:
 	EZStorage.store("game", "highscore", 101)
 	assert_eq(list_storage_dir(), map_to_directory_storage([sk("game", ["highscore", "over", "pi"]), sk("hello", ["world"])]))
 
-	assert(EZStorage.purge("game", "over"))
+	assert(EZStorage.purge_section_key("game", "over"))
 	assert_eq(list_storage_dir(), map_to_directory_storage([sk("game", ["highscore", "pi"]), sk("hello", ["world"])]))
 
-	assert(EZStorage.purge("game"))
+	assert(EZStorage.purge_section("game"))
 	assert_eq(list_storage_dir(), map_to_directory_storage([sk("hello", ["world"])]))
 
 	assert(EZStorage.purge())
@@ -160,11 +164,11 @@ func test_directory2_storage() -> void:
 	EZStorage.store("game", "highscore", 101)
 	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("game", ["highscore", "over", "pi"]), sk("hello", ["world"])]))
 
-	assert(EZStorage.purge("game", "over"))
+	assert(EZStorage.purge_section_key("game", "over"))
 	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("game", ["highscore", "pi"]), sk("hello", ["world"])]))
 
-	assert(EZStorage.purge("game"))
-	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("hello", ["world"])]))
+	assert(EZStorage.purge_section("game"))
+	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("game", []), sk("hello", ["world"])]))
 
 	assert(EZStorage.purge())
 	assert_eq(list_storage_dir(), map_to_directory2_storage([]))
@@ -202,11 +206,11 @@ func test_files_storage() -> void:
 	EZStorage.store("game", "highscore", 101)
 	assert_eq(list_storage_dir(), map_to_files_storage([sk("game", ["highscore", "over", "pi"]), sk("hello", ["world"])]))
 
-	assert(EZStorage.purge("game", "over"))
+	assert(EZStorage.purge_section_key("game", "over"))
 	assert_eq(list_storage_dir(), map_to_files_storage([sk("game", ["highscore", "pi"]), sk("hello", ["world"])]))
 
-	assert(EZStorage.purge("game"))
-	assert_eq(list_storage_dir(), map_to_files_storage([sk("hello", ["world"])]))
+	assert(EZStorage.purge_section("game"))
+	assert_eq(list_storage_dir(), map_to_files_storage([sk("game", []), sk("hello", ["world"])]))
 
 	assert(EZStorage.purge())
 	assert_eq(list_storage_dir(), map_to_files_storage([]))
@@ -263,19 +267,19 @@ func test_directory_cache() -> void:
 		[hello_section, "new_key"],
 	])
 
-	assert(hello_section.purge(["new_key"]))
+	assert(hello_section.purge_all(["new_key"]))
 	assert_eq(list_storage_dir(), map_to_directory_storage([sk("purge", ["example"]), sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge(["hello"]))
+	assert(EZCache.purge_all(["hello"]))
 	assert_eq(list_storage_dir(), map_to_directory_storage([sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge())
+	assert(EZCache.purge_all())
 	assert_eq(list_storage_dir(), map_to_directory_storage([]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
@@ -336,19 +340,19 @@ func test_directory2_cache() -> void:
 		[hello_section, "new_key"],
 	])
 
-	assert(hello_section.purge(["new_key"]))
+	assert(hello_section.purge_all(["new_key"]))
 	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("purge", ["example"]), sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge(["hello"]))
+	assert(EZCache.purge_all(["hello"]))
 	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge())
+	assert(EZCache.purge_all())
 	assert_eq(list_storage_dir(), map_to_directory2_storage([]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
@@ -409,19 +413,19 @@ func test_files_cache() -> void:
 		[hello_section, "new_key"],
 	])
 
-	assert(hello_section.purge(["new_key"]))
+	assert(hello_section.purge_all(["new_key"]))
 	assert_eq(list_storage_dir(), map_to_files_storage([sk("purge", ["example"]), sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge(["hello"]))
+	assert(EZCache.purge_all(["hello"]))
 	assert_eq(list_storage_dir(), map_to_files_storage([sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge())
+	assert(EZCache.purge_all())
 	assert_eq(list_storage_dir(), map_to_files_storage([]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
@@ -487,7 +491,7 @@ func test_file_storage():
 	# Purge all keys
 	for section in range(sections):
 		for key in range(keys):
-			assert(EZStorage.purge(String(section), String(key)))
+			assert(EZStorage.purge_section_key(String(section), String(key)))
 
 	assert(kv_file_len == get_kv_file_len())
 	assert(EZStorage.validate())
@@ -504,7 +508,7 @@ func test_file_storage():
 
 	# Purge all sections
 	for section in range(sections):
-		assert(EZStorage.purge(String(section)))
+		assert(EZStorage.purge_section(String(section)))
 		assert(EZStorage.validate())
 
 	assert(kv_file_len == get_kv_file_len())
@@ -520,13 +524,13 @@ func test_file_storage():
 	kv_file_len = get_kv_file_len()
 	assert(EZStorage.validate())
 
-	assert(EZStorage.purge("game", "over"))
+	assert(EZStorage.purge_section_key("game", "over"))
 
 	assert(kv_file_len == get_kv_file_len())
 	assert(EZStorage.validate())
 
 	assert(kv_file_len == get_kv_file_len())
-	assert(EZStorage.purge("game"))
+	assert(EZStorage.purge_section("game"))
 
 	assert(kv_file_len == get_kv_file_len())
 	assert(EZStorage.validate())

@@ -8,7 +8,7 @@ var decoder := {
 
 
 func read_section(section: String) -> Dictionary:
-	var path := root.plus_file(section)
+	var path := root.plus_file(Util.hash_filename(section))
 	var directory := Directory.new()
 	if directory.file_exists(path):
 		var file := File.new()
@@ -72,7 +72,7 @@ func copy_to(_src: String, _dst: String):
 
 func store(section: String, key: String, value) -> bool:
 	Util.run_migration(get_root(), decoder)
-	var keys := read_section(Util.hash_filename(section))
+	var keys := read_section(section)
 	keys[key] = value
 	var command := StoreCommand.new(Util.hash_filename(section), keys)
 	return Util.execute(get_root(), command)
@@ -84,21 +84,34 @@ func fetch(section: String, key: String, default = null):
 	return keys.get(key, default)
 
 
-func purge(section := "", key := "") -> bool:
-	Util.run_migration(get_root(), decoder)
-	var command: Util.Command
-	if section and key:
-		var keys := read_section(Util.hash_filename(section))
+func purge(skip_sections: PoolStringArray) -> bool:
+	var path := get_root()
+	skip_sections = Util.hash_filenames(skip_sections)
+	var all_success := true
+	var dirs := Util.get_all_in_dir(path)
+	for dir in dirs:
+		if skip_sections.has(dir):
+			continue
+		var command := PurgeCommand.new(dir)
+		all_success = Util.execute(get_root(), command) and all_success
+	return all_success
+
+
+func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
+	var keys := read_section(section)
+	for key in keys:
+		if key in skip_keys:
+			continue
 		keys.erase(key)
-		command = StoreCommand.new(Util.hash_filename(section), keys)
-	else:
-		command = PurgeCommand.new(Util.hash_filename(section))
+	var command := StoreCommand.new(Util.hash_filename(section), keys)
 	return Util.execute(get_root(), command)
 
 
-func get_sections() -> PoolStringArray:
-	return Util.get_all_in_dir(get_root())
-
-
-func get_keys(section: String) -> PoolStringArray:
-	return PoolStringArray(read_section(section).keys())
+func purge_section_key(section: String, key: String) -> bool:
+	Util.run_migration(get_root(), decoder)
+	var keys := read_section(section)
+	if not keys.has(key):
+		return false
+	keys.erase(key)
+	var command := StoreCommand.new(Util.hash_filename(section), keys)
+	return Util.execute(get_root(), command)
