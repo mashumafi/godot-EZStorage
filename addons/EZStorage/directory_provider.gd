@@ -47,20 +47,13 @@ func fetch(section: String, key: String, default = null):
 	return default
 
 
-func _has_ending(haystack: String, needles: PoolStringArray) -> bool:
-	for needle in needles:
-		if haystack.ends_with(needle):
-			return true
-	return false
-
-
 func purge(skip_sections: PoolStringArray) -> bool:
 	var path := get_root()
 	skip_sections = Util.hash_filenames(skip_sections)
 	var dirs := Util.get_dirs_in_dir(path)
 	var success := true
 	for dir in dirs:
-		if _has_ending(dir, skip_sections):
+		if skip_sections.has(dir):
 			continue
 		success = Util.directory_remove_recursive(path.plus_file(dir)) && success
 	return success
@@ -75,7 +68,7 @@ func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
 	var dirs := Util.get_dirs_in_dir(path)
 	var success := true
 	for dir in dirs:
-		if _has_ending(dir, skip_keys):
+		if skip_keys.has(dir):
 			continue
 		success = Util.directory_remove_recursive(path.plus_file(dir)) && success
 	return success

@@ -89,10 +89,31 @@ func fetch(section: String, key: String, default = null):
 
 
 func purge(skip_sections: PoolStringArray) -> bool:
-	return false
+	Util.run_migration(get_root(), decoder)
+	var path := get_root()
+	skip_sections = Util.hash_filenames(skip_sections)
+	var all_success := true
+	var dirs := Util.get_all_in_dir(path)
+	for dir in dirs:
+		if skip_sections.has(dir):
+			continue
+		var command := PurgeCommand.new(dir, "")
+		all_success = Util.execute(get_root(), command) and all_success
+	return all_success
 
 func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
-	return false
+	Util.run_migration(get_root(), decoder)
+	var path := get_root().plus_file(section)
+	skip_keys = Util.hash_filenames(skip_keys)
+	var all_success := true
+	var dirs := Util.get_all_in_dir(path)
+	for dir in dirs:
+		if skip_keys.has(dir):
+			continue
+		var command := PurgeCommand.new(Util.hash_filename(section), dir)
+		all_success = Util.execute(get_root(), command) and all_success
+	return all_success
+
 
 func purge_section_key(section: String, key: String) -> bool:
 	Util.run_migration(get_root(), decoder)
