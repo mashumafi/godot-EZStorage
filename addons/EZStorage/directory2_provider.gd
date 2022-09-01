@@ -101,9 +101,10 @@ func purge(skip_sections: PoolStringArray) -> bool:
 		all_success = Util.execute(get_root(), command) and all_success
 	return all_success
 
+
 func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
 	Util.run_migration(get_root(), decoder)
-	var path := get_root().plus_file(section)
+	var path := get_root().plus_file(Util.hash_filename(section))
 	skip_keys = Util.hash_filenames(skip_keys)
 	var all_success := true
 	var dirs := Util.get_all_in_dir(path)

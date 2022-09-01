@@ -31,13 +31,13 @@ func fetch(_section: String, _key: String, _default = null):
 	return _default
 
 
-func purge(skip_sections: PoolStringArray) -> bool:
+func purge(_skip_sections: PoolStringArray) -> bool:
 	return false
 
 
-func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
+func purge_section(_section: String, _skip_keys: PoolStringArray) -> bool:
 	return false
 
 
-func purge_section_key(section: String, key: String) -> bool:
+func purge_section_key(_section: String, _key: String) -> bool:
 	return false

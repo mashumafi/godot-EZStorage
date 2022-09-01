@@ -85,26 +85,33 @@ func fetch(section: String, key: String, default = null):
 
 
 func purge(skip_sections: PoolStringArray) -> bool:
-	return false
+	var path := get_root()
+	skip_sections = Util.hash_filenames(skip_sections)
+	var all_success := true
+	var dirs := Util.get_all_in_dir(path)
+	for dir in dirs:
+		if skip_sections.has(dir):
+			continue
+		var command := PurgeCommand.new(dir)
+		all_success = Util.execute(get_root(), command) and all_success
+	return all_success
+
 
 func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
-	return false
-
-func purge_section_key(section: String, key: String) -> bool:
-	Util.run_migration(get_root(), decoder)
-	var command: Util.Command
-	if section and key:
-		var keys := read_section(Util.hash_filename(section))
+	var keys := read_section(section)
+	for key in keys:
+		if key in skip_keys:
+			continue
 		keys.erase(key)
-		command = StoreCommand.new(Util.hash_filename(section), keys)
-	else:
-		command = PurgeCommand.new(Util.hash_filename(section))
+	var command := StoreCommand.new(Util.hash_filename(section), keys)
 	return Util.execute(get_root(), command)
 
 
-func get_sections() -> PoolStringArray:
-	return Util.get_all_in_dir(get_root())
-
-
-func get_keys(section: String) -> PoolStringArray:
-	return PoolStringArray(read_section(section).keys())
+func purge_section_key(section: String, key: String) -> bool:
+	Util.run_migration(get_root(), decoder)
+	var keys := read_section(Util.hash_filename(section))
+	if not keys.has(key):
+		return false
+	keys.erase(key)
+	var command := StoreCommand.new(Util.hash_filename(section), keys)
+	return Util.execute(get_root(), command)

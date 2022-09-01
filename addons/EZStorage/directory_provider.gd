@@ -58,6 +58,7 @@ func purge(skip_sections: PoolStringArray) -> bool:
 		success = Util.directory_remove_recursive(path.plus_file(dir)) && success
 	return success
 
+
 func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
 	var path := get_root()
 	path = path.plus_file(Util.hash_filename(section))
@@ -72,6 +73,7 @@ func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
 			continue
 		success = Util.directory_remove_recursive(path.plus_file(dir)) && success
 	return success
+
 
 func purge_section_key(section: String, key: String) -> bool:
 	var path := get_root()
