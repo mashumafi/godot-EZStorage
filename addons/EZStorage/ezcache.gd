@@ -58,7 +58,7 @@ class SectionCache:
 	# @param skip_keys (PoolStringArray): The keys to keep.
 	# @return all_success (bool): All purging was a success.
 	func purge(skip_keys: PoolStringArray = []) -> bool:
-		for key in _keys:
+		for key in _keys.keys():
 			if not key in skip_keys:
 				var success = EZStorage.purge_section_key(_section, key)
 				if _keys.erase(key) and success:
@@ -84,7 +84,7 @@ func get_section(section: String) -> SectionCache:
 # @param skip_sections (PoolStringArray): The sections to prevent deletion.
 # @return all_success (bool): All purging was a success.
 func purge(skip_sections: PoolStringArray = []) -> bool:
-	for section in _sections:
+	for section in _sections.keys():
 		if not section in skip_sections:
 			_sections[section].purge()
 			_sections.erase(section)
