@@ -14,6 +14,7 @@ config/name="EZStorage"
 run/main_scene="res://tests/EZStorage.tscn"
 config/icon="res://icon.png"
 storage/provider=2
+storage/debug_filenames=false
 
 [autoload]
 

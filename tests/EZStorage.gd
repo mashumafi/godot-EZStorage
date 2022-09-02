@@ -267,19 +267,19 @@ func test_directory_cache() -> void:
 		[hello_section, "new_key"],
 	])
 
-	assert(hello_section.purge_all(["new_key"]))
+	assert(hello_section.purge(["new_key"]))
 	assert_eq(list_storage_dir(), map_to_directory_storage([sk("purge", ["example"]), sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge_all(["hello"]))
+	assert(EZCache.purge(["hello"]))
 	assert_eq(list_storage_dir(), map_to_directory_storage([sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge_all())
+	assert(EZCache.purge())
 	assert_eq(list_storage_dir(), map_to_directory_storage([]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
@@ -340,19 +340,19 @@ func test_directory2_cache() -> void:
 		[hello_section, "new_key"],
 	])
 
-	assert(hello_section.purge_all(["new_key"]))
+	assert(hello_section.purge(["new_key"]))
 	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("purge", ["example"]), sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge_all(["hello"]))
+	assert(EZCache.purge(["hello"]))
 	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge_all())
+	assert(EZCache.purge())
 	assert_eq(list_storage_dir(), map_to_directory2_storage([]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
@@ -413,19 +413,19 @@ func test_files_cache() -> void:
 		[hello_section, "new_key"],
 	])
 
-	assert(hello_section.purge_all(["new_key"]))
+	assert(hello_section.purge(["new_key"]))
 	assert_eq(list_storage_dir(), map_to_files_storage([sk("purge", ["example"]), sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge_all(["hello"]))
+	assert(EZCache.purge(["hello"]))
 	assert_eq(list_storage_dir(), map_to_files_storage([sk("hello", ["new_key"])]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
 	])
 
-	assert(EZCache.purge_all())
+	assert(EZCache.purge())
 	assert_eq(list_storage_dir(), map_to_files_storage([]))
 	assert_eq(listener.changes, [
 		[hello_section, "new_key"],
