@@ -6,133 +6,7 @@ var decoder := {
 	"s": StoreCommand,
 	"p": PurgeCommand,
 }
-var cache := Cache.new(30)
-
-
-class ObjectFactory:
-	var cache := []
-	var type
-
-	func _init(type):
-		self.type = type
-
-	func _notification(what: int) -> void:
-		if what == NOTIFICATION_PREDELETE:
-			for obj in cache:
-				obj.free()
-
-	func alloc() -> Object:
-		if cache.empty():
-			return self.type.call("new")
-
-		return cache.pop_back()
-
-	func has(inst: Object) -> bool:
-		for obj in cache:
-			if obj == inst:
-				return true
-		return false
-
-	func delete(obj: Object):
-		assert(not has(obj), "Already deleted the obj")
-		cache.push_back(obj)
-
-
-class Cache:
-	extends Reference
-
-	var head: Link
-	var tail: Link
-	var lookup: Dictionary
-	var size: int
-	var links := ObjectFactory.new(Link)
-
-	class Link:
-		extends Object
-
-		var next: Link
-		var prev: Link
-		var key
-		var data
-
-		func _notification(what: int) -> void:
-			if what == NOTIFICATION_PREDELETE:
-				if next:
-					next.free()
-
-	func _init(size: int):
-		self.size = size
-
-	func _notification(what: int) -> void:
-		if what == NOTIFICATION_PREDELETE:
-			if head:
-				head.free()
-
-	func get(key):
-		var link: Link = lookup.get(key)
-		if link:
-			if link != head and lookup.size() > 1:
-				_remove(key)
-				_insert(link)
-
-			return link.data
-
-	func _insert(link: Link):
-		if head == null:
-			tail = link
-		else:
-			head.prev = link
-
-		link.next = head
-		head = link
-
-	func insert(key, data):
-		assert(not lookup.has(key), "The key already exists.")
-		var link: Link = links.alloc()
-		link.key = key
-		link.data = data
-		lookup[key] = link
-		_insert(link)
-		if lookup.size() > size:
-			_delete_last()
-
-	func _remove(key) -> Link:
-		var current: Link = lookup.get(key)
-		if not current:
-			return null
-
-		if current == head:
-			head = head.next
-		else:
-			current.prev.next = current.next
-
-		if current == tail:
-			tail = current.prev
-		else:
-			current.next.prev = current.prev
-
-		return current
-
-	func _delete_last():
-		var link := tail
-
-		if head.next == null:
-			head = null
-		else:
-			tail.prev.next = null
-
-		tail = tail.prev
-
-		lookup.erase(link.key)
-		link.next = null
-		links.delete(link)
-
-	func erase(key):
-		var current := _remove(key)
-		if current:
-			lookup.erase(key)
-			current.next = null
-			links.delete(current)
+var cache := Util.Cache.new(30)
 
 
 func read_section(section: String) -> Dictionary:
@@ -230,7 +104,8 @@ func purge(skip_sections: PoolStringArray) -> bool:
 	for dir in dirs:
 		if skip_sections.has(dir):
 			continue
-		cache.erase(dir)
+		var keys := read_section(dir)
+		keys.clear()
 		var command := PurgeCommand.new(dir)
 		all_success = Util.execute(get_root(), command) and all_success
 	return all_success
@@ -245,7 +120,6 @@ func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
 	var command: Util.Command
 	section = Util.hash_filename(section)
 	if keys.empty():
-		cache.erase(section)
 		command = PurgeCommand.new(section)
 	else:
 		command = StoreCommand.new(section, keys)
