@@ -113,6 +113,8 @@ func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
 			continue
 		var command := PurgeCommand.new(Util.hash_filename(section), dir)
 		all_success = Util.execute(get_root(), command) and all_success
+	var dir := Directory.new()
+	dir.remove(get_root().plus_file(Util.hash_filename(section)))
 	return all_success
 
 
