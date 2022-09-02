@@ -86,6 +86,6 @@ func get_section(section: String) -> SectionCache:
 func purge(skip_sections: PoolStringArray = []) -> bool:
 	for section in _sections:
 		if not section in skip_sections:
-			_sections[section].purge_all()
+			_sections[section].purge()
 			_sections.erase(section)
 	return EZStorage.purge(skip_sections)
