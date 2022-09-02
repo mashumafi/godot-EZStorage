@@ -86,14 +86,14 @@ EZStorage.fetch("my_section", "my_key")
 EZStorage.fetch("my_section", "my_key", "my_default")
 
 
-# Delete all data in "my_section/my_key".
-EZStorage.purge("my_section", "my_key")
+# Delete "my_section/my_key".
+EZStorage.purge_section_key("my_section", "my_key")
 
-# Delete all data in "my_section".
-EZStorage.purge("my_section")
+# Delete all data in "my_section" execpt keys listed.
+EZStorage.purge_section("my_section", ["skip", "these", "keys"])
 
-# Delete all data.
-EZStorage.purge()
+# Delete all data except sections listed.
+EZStorage.purge(["skip", "these", "sections"])
 ```
 
 ### EZCache API
@@ -118,13 +118,14 @@ var my_value = my_section.fetch("my_key", "my_default")
 # Fetch a value, return "my_default" if key does not exist. Will set "my_default" in the cache for future fetching.
 var my_value = my_section.fetch("my_key", "my_default", true)]
 
+# Delete a key from the section.
+my_section.purge_key("delete_this_key")
 
-# Delete all keys in my_section except those listed
+# Delete all keys in my_section except those listed.
 my_section.purge(["skipped_key"])
 
-# Delete all sections in cache except those listed
+# Delete all sections in cache except those listed.
 EZCache.purge(["skipped_section"])
-
 
 # Yield until a key is changed on the cache
 var key = yield(my_section, "changed")
