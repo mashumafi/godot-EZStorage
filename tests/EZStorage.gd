@@ -168,7 +168,7 @@ func test_directory2_storage() -> void:
 	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("game", ["highscore", "pi"]), sk("hello", ["world"])]))
 
 	assert(EZStorage.purge_section("game"))
-	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("game", []), sk("hello", ["world"])]))
+	assert_eq(list_storage_dir(), map_to_directory2_storage([sk("hello", ["world"])]))
 
 	assert(EZStorage.purge())
 	assert_eq(list_storage_dir(), map_to_directory2_storage([]))
@@ -210,7 +210,7 @@ func test_files_storage() -> void:
 	assert_eq(list_storage_dir(), map_to_files_storage([sk("game", ["highscore", "pi"]), sk("hello", ["world"])]))
 
 	assert(EZStorage.purge_section("game"))
-	assert_eq(list_storage_dir(), map_to_files_storage([sk("game", []), sk("hello", ["world"])]))
+	assert_eq(list_storage_dir(), map_to_files_storage([sk("hello", ["world"])]))
 
 	assert(EZStorage.purge())
 	assert_eq(list_storage_dir(), map_to_files_storage([]))

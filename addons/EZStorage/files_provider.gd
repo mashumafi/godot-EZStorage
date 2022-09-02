@@ -99,11 +99,15 @@ func purge(skip_sections: PoolStringArray) -> bool:
 
 func purge_section(section: String, skip_keys: PoolStringArray) -> bool:
 	var keys := read_section(section)
-	for key in keys:
+	for key in keys.keys():
 		if key in skip_keys:
 			continue
 		keys.erase(key)
-	var command := StoreCommand.new(Util.hash_filename(section), keys)
+	var command: Util.Command
+	if keys.empty():
+		command = PurgeCommand.new(Util.hash_filename(section))
+	else:
+		command = StoreCommand.new(Util.hash_filename(section), keys)
 	return Util.execute(get_root(), command)
 
 
