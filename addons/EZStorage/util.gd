@@ -77,17 +77,22 @@ class ObjectPool:
 	var cache := []
 	var type
 
-	func _init(type):
+	func _init(type, size := 0):
 		self.type = type
+		for i in size:
+			delete(_alloc())
 
 	func _notification(what: int) -> void:
 		if what == NOTIFICATION_PREDELETE:
 			for obj in cache:
 				obj.free()
 
+	func _alloc() -> Object:
+		return self.type.new()
+
 	func alloc() -> Object:
 		if cache.empty():
-			return self.type.call("new")
+			return _alloc()
 
 		return cache.pop_back()
 
@@ -109,7 +114,7 @@ class Cache:
 	var tail: Link
 	var lookup: Dictionary
 	var size: int
-	var links_pool := ObjectPool.new(Link)
+	var links_pool : ObjectPool
 
 	class Link:
 		extends Object
@@ -126,6 +131,7 @@ class Cache:
 
 	func _init(size: int):
 		self.size = size
+		links_pool = ObjectPool.new(Link, size)
 
 	func _notification(what: int) -> void:
 		if what == NOTIFICATION_PREDELETE:
