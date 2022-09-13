@@ -85,7 +85,7 @@ func copy_to(_src: String, _dst: String):
 func store(section: String, key: String, value) -> bool:
 	Util.run_migration(get_root(), decoder)
 	var keys := read_section(section)
-	keys[key] = value
+	keys[key] = Util.duplicate(value)
 	var command := StoreCommand.new(Util.hash_filename(section), keys)
 	return Util.execute(get_root(), command)
 
@@ -93,7 +93,7 @@ func store(section: String, key: String, value) -> bool:
 func fetch(section: String, key: String, default = null):
 	Util.run_migration(get_root(), decoder)
 	var keys := read_section(section)
-	return keys.get(key, default)
+	return Util.duplicate(keys.get(key, default))
 
 
 func purge(skip_sections: PoolStringArray) -> bool:
