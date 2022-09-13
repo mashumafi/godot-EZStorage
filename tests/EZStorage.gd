@@ -215,26 +215,6 @@ func test_files_storage() -> void:
 	assert(EZStorage.purge())
 	assert_eq(list_storage_dir(), map_to_files_storage([]))
 
-	# Test the cache
-	var dicts := []
-	dicts.resize(30)
-	for i in range(dicts.size()):
-		var dict := {}
-		dicts[i] = dict
-		EZStorage.store(str(i), "dict", dict)
-	for i in range(dicts.size()):
-		assert(EZStorage.fetch(str(i), "dict") == dicts[i])
-
-	for i in range(dicts.size()):
-		var dict := {}
-		dicts[i] = dict
-		EZStorage.store(str(i+100), "dict", dict)
-	for i in range(dicts.size()):
-		assert(EZStorage.fetch(str(i), "dict") != dicts[i])
-
-	assert(EZStorage.purge())
-	assert_eq(list_storage_dir(), map_to_files_storage([]))
-
 class CacheListener:
 	var changes := []
 	func _changed(key, section):

@@ -25,6 +25,12 @@ static func hash_filenames(s: PoolStringArray) -> PoolStringArray:
 	return s
 
 
+static func duplicate(value):
+	if value is Array or value is Dictionary:
+		return value.duplicate()
+	return value
+
+
 static func decode(buffer: Array, decoder: Dictionary) -> Command:
 	if buffer.empty():
 		return null
@@ -114,7 +120,7 @@ class Cache:
 	var tail: Link
 	var lookup: Dictionary
 	var size: int
-	var links_pool : ObjectPool
+	var links_pool: ObjectPool
 
 	class Link:
 		extends Object
